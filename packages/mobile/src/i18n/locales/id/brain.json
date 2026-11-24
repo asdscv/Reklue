@@ -115,7 +115,7 @@
     },
     "cardRecall": {
       "name": "Ingat Kartu Remi",
-      "desc": "Ingat nilai, jenis, dan posisi setiap kartu. Berlatih hingga lima kartu komunitas dan dua kartu pribadi dengan waktu melihat yang lebih singkat."
+      "desc": "Ingat nilai, jenis, dan urutan setiap kartu. Di level tinggi, ingat hingga 30 kartu dari satu dek."
     },
     "mazeRun": {
       "name": "Labirin",
@@ -270,12 +270,19 @@
     "makeSquareButton": "Kuadrat x²",
     "makeSquareHint": "Ketuk angka untuk menguadratkannya. Ketuk angka yang sudah dikuadratkan untuk membatalkan.",
     "makeAnswer": "Contoh persamaan yang benar",
-    "cardRecallMemorize": "Ingat posisi setiap kartu",
-    "cardRecallEnter": "Pilih nilai lalu jenis untuk setiap kartu",
+    "cardRecallMemorize": "Hafalkan {{total}} kartu sesuai urutan",
+    "cardRecallStart": "Sudah hafal",
+    "cardRecallPickRank": "Kartu {{position}} · Pilih nilai",
+    "cardRecallPickSuit": "Kartu {{position}} · Pilih jenis",
+    "cardRecallChangeRank": "Ubah nilai",
+    "cardRecallRange": "Kartu {{start}}–{{end}}",
+    "cardRecallSubmit": "{{answered}}/{{total}} · Periksa",
+    "cardRecallEnter": "Kartu {{position}} dari {{total}}. Pilih nilai, lalu jenisnya.",
     "cardRecallCheck": "Ketuk kartu untuk mengubahnya atau konfirmasi",
     "cardRecallResult": "{{correct}} dari {{total}} kartu benar",
     "cardRecallCommunity": "Kartu komunitas",
-    "cardRecallPrivate": "Kartu pribadi",
+    "cardRecallPrivate": "Kartu Anda",
+    "cardRecallOpponent": "Lawan {{number}}",
     "cardRecallPosition": "Kartu {{position}}",
     "cardRecallSuits": {
       "spades": "Sekop",

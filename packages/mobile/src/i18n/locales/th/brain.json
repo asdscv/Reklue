@@ -115,7 +115,7 @@
     },
     "cardRecall": {
       "name": "จำไพ่",
-      "desc": "จำแต้ม ดอก และตำแหน่งของไพ่แต่ละใบ ระดับสูงขึ้นมีไพ่กองกลาง 5 ใบและไพ่ในมือ 2 ใบให้จำในเวลาที่สั้นลง"
+      "desc": "จำแต้ม ดอก และลำดับของไพ่แต่ละใบ ระดับสูงจะให้จำไพ่สูงสุด 30 ใบจากสำรับเดียว"
     },
     "mazeRun": {
       "name": "เขาวงกต",
@@ -270,12 +270,19 @@
     "makeSquareButton": "กำลังสอง x²",
     "makeSquareHint": "แตะตัวเลขที่จะยกกำลังสอง แตะตัวเลขที่ยกกำลังสองแล้วเพื่อยกเลิก",
     "makeAnswer": "ตัวอย่างสมการที่ถูกต้อง",
-    "cardRecallMemorize": "จำไพ่แต่ละใบตามตำแหน่ง",
-    "cardRecallEnter": "เลือกแต้มแล้วเลือกดอกของไพ่แต่ละใบ",
+    "cardRecallMemorize": "จำไพ่ {{total}} ใบตามลำดับ",
+    "cardRecallStart": "จำได้แล้ว",
+    "cardRecallPickRank": "ไพ่ใบที่ {{position}} · เลือกแต้ม",
+    "cardRecallPickSuit": "ไพ่ใบที่ {{position}} · เลือกดอก",
+    "cardRecallChangeRank": "เปลี่ยนแต้ม",
+    "cardRecallRange": "ไพ่ใบที่ {{start}}–{{end}}",
+    "cardRecallSubmit": "{{answered}}/{{total}} · ตรวจคำตอบ",
+    "cardRecallEnter": "ไพ่ใบที่ {{position}} จาก {{total}} ใบ เลือกแต้มแล้วเลือกดอก",
     "cardRecallCheck": "แตะไพ่เพื่อแก้ไขหรือกดยืนยัน",
     "cardRecallResult": "ถูก {{correct}} จาก {{total}} ใบ",
     "cardRecallCommunity": "ไพ่กองกลาง",
-    "cardRecallPrivate": "ไพ่ในมือ",
+    "cardRecallPrivate": "ไพ่ของคุณ",
+    "cardRecallOpponent": "คู่แข่ง {{number}}",
     "cardRecallPosition": "ไพ่ใบที่ {{position}}",
     "cardRecallSuits": {
       "spades": "โพดำ",

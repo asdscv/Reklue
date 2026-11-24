@@ -115,7 +115,7 @@
     },
     "cardRecall": {
       "name": "トランプ記憶",
-      "desc": "各カードの数字・マーク・位置を覚えます。難しくなると共通カード5枚と手札2枚を短時間で覚えます。"
+      "desc": "カードの数字・マーク・順番を覚えて答えます。上級では1組のトランプから最大30枚を覚えます。"
     },
     "mazeRun": {
       "name": "迷路",
@@ -270,12 +270,19 @@
     "makeSquareButton": "二乗 x²",
     "makeSquareHint": "二乗する数をタップしてください。二乗済みの数をタップすると元に戻ります。",
     "makeAnswer": "正しい式の例",
-    "cardRecallMemorize": "カードを位置ごとに覚えましょう",
-    "cardRecallEnter": "各カードの数字、マークの順に選びましょう",
+    "cardRecallMemorize": "カード{{total}}枚を順番に覚えましょう",
+    "cardRecallStart": "覚えた",
+    "cardRecallPickRank": "{{position}}枚目 · 数字を選ぶ",
+    "cardRecallPickSuit": "{{position}}枚目 · マークを選ぶ",
+    "cardRecallChangeRank": "数字を変更",
+    "cardRecallRange": "{{start}}〜{{end}}枚目",
+    "cardRecallSubmit": "{{answered}}/{{total}} · 答え合わせ",
+    "cardRecallEnter": "{{total}}枚中{{position}}枚目のカード。数字、マークの順に選びましょう。",
     "cardRecallCheck": "カードをタップして直すか、確定しましょう",
     "cardRecallResult": "{{total}}枚中{{correct}}枚正解",
     "cardRecallCommunity": "共通カード",
-    "cardRecallPrivate": "手札",
+    "cardRecallPrivate": "自分の手札",
+    "cardRecallOpponent": "相手{{number}}",
     "cardRecallPosition": "カード{{position}}",
     "cardRecallSuits": {
       "spades": "スペード",

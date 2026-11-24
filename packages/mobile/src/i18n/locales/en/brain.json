@@ -115,7 +115,7 @@
     },
     "cardRecall": {
       "name": "Playing Card Recall",
-      "desc": "Remember each card’s rank, suit and position. Work up to five community cards and two hole cards with less time to look."
+      "desc": "Recall the rank, suit and order of each card. At higher levels, memorize up to 30 cards from one deck."
     },
     "mazeRun": {
       "name": "Maze Run",
@@ -270,12 +270,19 @@
     "makeSquareButton": "Square x²",
     "makeSquareHint": "Tap a number to square it. Tap a squared number to undo it.",
     "makeAnswer": "One correct equation",
-    "cardRecallMemorize": "Remember each card in its position",
-    "cardRecallEnter": "Choose a rank, then a suit, for each card",
+    "cardRecallMemorize": "Memorize {{total}} cards in order",
+    "cardRecallStart": "Ready to recall",
+    "cardRecallPickRank": "Card {{position}} · Pick a rank",
+    "cardRecallPickSuit": "Card {{position}} · Pick a suit",
+    "cardRecallChangeRank": "Change rank",
+    "cardRecallRange": "Cards {{start}}–{{end}}",
+    "cardRecallSubmit": "{{answered}}/{{total}} · Check answers",
+    "cardRecallEnter": "Card {{position}} of {{total}}. Choose its rank, then its suit.",
     "cardRecallCheck": "Tap a card to edit it or confirm your answer",
     "cardRecallResult": "{{correct}} of {{total}} cards correct",
     "cardRecallCommunity": "Community cards",
-    "cardRecallPrivate": "Hole cards",
+    "cardRecallPrivate": "Your hand",
+    "cardRecallOpponent": "Opponent {{number}}",
     "cardRecallPosition": "Card {{position}}",
     "cardRecallSuits": {
       "spades": "Spades",

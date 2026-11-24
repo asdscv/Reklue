@@ -138,49 +138,114 @@ export function MakeNumberBoard({ view, onTap, width, height, demo, registerTarg
   </Frame>
 }
 
-export function CardRecallBoard({ view, onTap, width, height, demo, paused, theme, registerTarget }: Props<CardRecallView>) {
+export function CardRecallBoard({ view, onTap, width, height, demo, paused, theme, registerTarget, onSkipReveal }: Props<CardRecallView>) {
   const { t } = useTranslation('brain')
+  const { input, preview, rows, slots } = view
+  const active = input?.active
+  const compact = !!rows || view.hands.length > 1
   const cardWidth = Math.min(demo ? 48 : 68, Math.max(44, Math.floor((width - 24) / 5)))
-  const columns = Math.min(7, Math.max(1, Math.floor((width + 4) / (demo ? 32 : 48))))
+  const cardHeight = demo ? 46 : rows ? 46 : compact ? 48 : 66
+  const cardFont = demo ? 16 : compact ? 18 : 24
+  const columns = width >= (demo ? 220 : 332) ? 7 : 5
   const rankWidth = Math.floor((width - (columns - 1) * 4) / columns)
-  const group = (slots: CardRecallView['slots'], title?: string) => <View style={{ gap: 4 }}>
+  const currentRow = rows?.find(({ start, end }) => active != null && active >= start && active < end) ?? rows?.at(-1)
+  const actionHeight = demo ? 28 : 44
+  const primary = { minHeight: actionHeight, backgroundColor: theme.accent, borderColor: theme.accent }
+  const primaryText = [styles.buttonText, { color: '#201009', fontSize: 16 }]
+
+  const group = (cards: CardRecallView['slots'], title?: string) => <View style={{ gap: 4 }}>
     {title && <Text style={[styles.hint, { fontSize: 14 }]}>{title}</Text>}
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}>
-      {slots.map((slot) => {
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: rows ? 'flex-start' : 'center', gap: rows ? 4 : 6 }}>
+      {cards.map((slot) => {
         const suit = slot.suit && t(`play.cardRecallSuits.${slot.suit}`)
         const position = t('play.cardRecallPosition', { position: slot.index + 1 })
         const verdict = slot.correct === undefined ? '' : t(slot.correct ? 'play.correct' : 'play.wrong')
         const label = [position, slot.rank, suit, verdict].filter(Boolean).join(', ')
         const red = slot.suit === 'hearts' || slot.suit === 'diamonds'
         const ink = slot.rank ? red ? '#A71D2A' : '#172033' : '#FFFFFFB3'
-        return <Tap key={slot.index} index={slot.index} onTap={onTap} registerTarget={registerTarget} demo={demo} selected={view.input ? slot.active : undefined} disabled={!view.input} label={label}
-          style={{ width: cardWidth, minHeight: demo ? 46 : 66, opacity: 1, borderColor: slot.active ? theme.accent : '#FFFFFF40', backgroundColor: slot.rank ? '#FFFDF9' : '#FFFFFF16' }}>
-          <Text style={{ fontWeight: '700', textAlign: 'center', color: ink, fontSize: demo ? 16 : 24, lineHeight: demo ? 17 : 24 }}>
-            {slot.rank ?? '?'}{slot.suit ? `\n${POKER_SUITS[slot.suit]}` : ''}
+        return <Tap key={slot.index} index={slot.index} onTap={onTap} registerTarget={registerTarget} demo={demo}
+          selected={input ? slot.active : undefined} disabled={!input || paused} label={label}
+          style={{ width: rows ? Math.floor((width - 16) / 5) : cardWidth, minHeight: cardHeight, paddingTop: rows ? 11 : 0, paddingHorizontal: compact ? 1 : 4, opacity: 1, borderColor: slot.active ? theme.accent : '#FFFFFF40', backgroundColor: slot.rank ? '#FFFDF9' : '#FFFFFF16' }}>
+          {rows && <Text style={{ position: 'absolute', top: 0, left: 4, color: ink, fontSize: 11 }} maxFontSizeMultiplier={1.2}>{slot.index + 1}</Text>}
+          <Text style={{ fontWeight: '700', textAlign: 'center', color: ink, fontSize: cardFont, lineHeight: cardFont + 1 }} numberOfLines={compact ? 1 : 2} adjustsFontSizeToFit={compact}>
+            {slot.rank ?? '?'}{slot.suit ? `${compact ? ' ' : '\n'}${POKER_SUITS[slot.suit]}` : ''}
           </Text>
-          {slot.correct !== undefined && <Text style={{ position: 'absolute', top: 2, right: 3, color: '#172033', fontSize: 12 }}>{slot.correct ? '✓' : '×'}</Text>}
+          {slot.correct !== undefined && <Text style={{ position: 'absolute', top: 0, right: 3, color: slot.correct ? '#065F46' : '#991B1B', fontSize: 12 }}>{slot.correct ? '✓' : '×'}</Text>}
         </Tap>
       })}
     </View>
   </View>
-  const publicCount = view.slots.length - view.privateCount
+
+  const publicCount = view.hands[0]?.start ?? slots.length
+  const table = !rows && <>
+    {group(slots.slice(0, publicCount), view.hands.length > 0 ? t('play.cardRecallCommunity') : undefined)}
+    {view.hands.length > 0 && <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: 12, rowGap: 6 }}>
+      {view.hands.map(({ start, end, title }) => <View key={start} style={{ width: 2 * cardWidth + 6 }}>
+        {group(slots.slice(start, end), t(title.key, title.params))}
+      </View>)}
+    </View>}
+  </>
+  const ranks = input && <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+    {input.ranks.map((key) => <Tap key={key.value} {...key} disabled={key.disabled || paused} onTap={onTap} demo={demo} registerTarget={registerTarget}
+      style={{ width: rankWidth, minHeight: actionHeight, borderColor: key.selected ? theme.accent : '#FFFFFF40' }}>
+      <Text style={[styles.buttonText, { fontSize: demo ? 14 : 19 }]}>{key.value}</Text>
+    </Tap>)}
+  </View>
+  const suits = input && <View style={{ flexDirection: 'row', gap: 4 }}>
+    {input.suits.map((key) => <Tap key={key.value} {...key} disabled={key.disabled || paused} onTap={onTap} demo={demo} registerTarget={registerTarget}
+      label={t(`play.cardRecallSuits.${key.value}`)} style={{ flex: 1, minHeight: actionHeight }}>{POKER_SUITS[key.value]}</Tap>)}
+  </View>
+
+  const next = !input && !preview && onSkipReveal && !demo && <Pressable accessibilityRole="button" accessibilityState={{ disabled: !!paused }}
+    style={[styles.button, primary]} onPress={onSkipReveal} disabled={paused} testID="brain-card-continue">
+    <Text style={primaryText}>{t('training.continue')}</Text>
+  </Pressable>
+  const begin = preview && !demo && <Tap index={preview.index} disabled={paused} onTap={onTap} style={primary}>
+    <Text style={primaryText}>{t('play.cardRecallStart')}</Text>
+  </Tap>
+  const bar = preview && <PreviewBar ms={preview.ms} paused={!!paused} width={width} />
+  if (rows && !input) return <View style={{ width, maxHeight: height, gap: 6 }} testID="brain-card-recall">
+    {bar}
+    <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ gap: 4 }} testID="brain-card-deck">
+      {rows.map(({ start, end }) => <View key={start}>{group(slots.slice(start, end))}</View>)}
+    </ScrollView>
+    {begin}
+    {next}
+  </View>
+
+  const rangeColumns = rows ? Math.max(1, Math.min(rows.length, Math.floor((width + 4) / 48))) : 1
+  const rangeWidth = Math.floor((width - 4 * (rangeColumns - 1)) / rangeColumns)
+  const resetRank = rows ? input?.resetRank : undefined
   return <Frame width={width} height={height} demo={demo}>
-    {group(view.slots.slice(0, publicCount), view.privateCount ? t('play.cardRecallCommunity') : undefined)}
-    {view.privateCount > 0 && group(view.slots.slice(publicCount), t('play.cardRecallPrivate'))}
-    {view.previewMs && <PreviewBar ms={view.previewMs} paused={!!paused} width={width} />}
-    {view.input && <>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4 }}>
-        {view.input.ranks.map((key) => <Tap key={key.value} {...key} onTap={onTap} demo={demo} registerTarget={registerTarget}
-          style={{ width: rankWidth, minHeight: demo ? 28 : 44, borderColor: key.selected ? theme.accent : '#FFFFFF40' }}>
-          <Text style={[styles.buttonText, { fontSize: demo ? 14 : 19 }]}>{key.value}</Text>
+    {bar}
+    {rows && currentRow ? <>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }} testID="brain-card-ranges">
+        {rows.map((row) => <Tap key={row.start} index={row.target} onTap={onTap} demo={demo} disabled={paused}
+          label={t('play.cardRecallRange', { start: row.start + 1, end: row.end })} selected={currentRow === row}
+          style={{ width: rangeWidth, minHeight: actionHeight, paddingHorizontal: 0, borderColor: currentRow === row ? theme.accent : '#FFFFFF40', backgroundColor: currentRow === row ? '#FED7AA26' : '#FFFFFF16' }}>
+          <Text style={[styles.buttonText, { fontSize: 12, fontVariant: ['tabular-nums'] }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>{row.start + 1}–{row.end}</Text>
         </Tap>)}
       </View>
-      <View style={{ flexDirection: 'row', gap: 4 }}>
-        {view.input.suits.map((key) => <Tap key={key.value} {...key} onTap={onTap} demo={demo} registerTarget={registerTarget} label={t(`play.cardRecallSuits.${key.value}`)}
-          style={{ flex: 1, minHeight: demo ? 28 : 44 }}>{POKER_SUITS[key.value]}</Tap>)}
-      </View>
-      <Tap {...view.input.submit} onTap={onTap} demo={demo} registerTarget={registerTarget} style={{ minHeight: demo ? 28 : 44 }}>{t('play.submit')}</Tap>
+      {group(slots.slice(currentRow.start, currentRow.end))}
+    </> : table}
+    {begin}
+    {input && <>
+      {rows ? <View style={{ gap: 4, justifyContent: 'flex-end', minHeight: Math.ceil(input.ranks.length / columns) * (actionHeight + 4) - 4 }}>
+        {resetRank === undefined ? ranks : <>
+          <Tap index={resetRank} onTap={onTap} demo={demo} disabled={paused} style={{ minHeight: actionHeight }}>
+            <Text style={[styles.buttonText, { fontSize: 16 }]}>{t('play.cardRecallChangeRank')}</Text>
+          </Tap>
+          {suits}
+        </>}
+      </View> : <>{ranks}{suits}</>}
+      <Tap index={input.submit.index} disabled={input.submit.disabled || paused} onTap={onTap} demo={demo} registerTarget={registerTarget}
+        style={input.submit.answered === slots.length ? primary : { minHeight: actionHeight }}>
+        <Text style={input.submit.answered === slots.length ? primaryText : [styles.buttonText, { fontSize: 16 }]}>
+          {rows ? t('play.cardRecallSubmit', { answered: input.submit.answered, total: slots.length }) : t('play.submit')}
+        </Text>
+      </Tap>
     </>}
+    {next}
   </Frame>
 }
 

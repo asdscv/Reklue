@@ -115,7 +115,7 @@
     },
     "cardRecall": {
       "name": "Nhớ bài Tây",
-      "desc": "Ghi nhớ hạng, chất và vị trí của từng lá bài. Ở mức cao hơn, hãy nhớ 5 lá bài chung và 2 lá bài riêng với ít thời gian quan sát hơn."
+      "desc": "Ghi nhớ hạng, chất và thứ tự của từng lá bài. Ở mức cao, hãy nhớ tối đa 30 lá từ một bộ bài."
     },
     "mazeRun": {
       "name": "Mê cung",
@@ -270,12 +270,19 @@
     "makeSquareButton": "Bình phương x²",
     "makeSquareHint": "Chạm vào số cần bình phương. Chạm vào số đã bình phương để bỏ bình phương.",
     "makeAnswer": "Một phương trình đúng",
-    "cardRecallMemorize": "Ghi nhớ từng lá bài theo vị trí",
-    "cardRecallEnter": "Chọn hạng rồi chọn chất cho từng lá bài",
+    "cardRecallMemorize": "Ghi nhớ {{total}} lá bài theo thứ tự",
+    "cardRecallStart": "Đã ghi nhớ",
+    "cardRecallPickRank": "Lá {{position}} · Chọn hạng",
+    "cardRecallPickSuit": "Lá {{position}} · Chọn chất",
+    "cardRecallChangeRank": "Đổi hạng",
+    "cardRecallRange": "Lá {{start}}–{{end}}",
+    "cardRecallSubmit": "{{answered}}/{{total}} · Kiểm tra",
+    "cardRecallEnter": "Lá {{position}} trong {{total}}. Chọn hạng rồi chọn chất.",
     "cardRecallCheck": "Chạm vào lá bài để sửa hoặc xác nhận",
     "cardRecallResult": "Đúng {{correct}} trên {{total}} lá bài",
     "cardRecallCommunity": "Bài chung",
-    "cardRecallPrivate": "Bài riêng",
+    "cardRecallPrivate": "Bài của bạn",
+    "cardRecallOpponent": "Đối thủ {{number}}",
     "cardRecallPosition": "Lá bài thứ {{position}}",
     "cardRecallSuits": {
       "spades": "Bích",

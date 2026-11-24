@@ -1,20 +1,28 @@
-import { POKER_RANKS, POKER_SUITS, type BrainGameDef, type CardRecallView, type PokerCard, type PokerRank, type PokerSuit } from '../types'
+import type { Rng } from '../rng'
+import { POKER_RANKS, POKER_SUITS, type BrainGameDef, type CardRecallView, type PokerCard, type PokerRank, type PokerSuit, type PromptView } from '../types'
 
 const suits = Object.keys(POKER_SUITS) as PokerSuit[]
 const deck = suits.flatMap((suit) => POKER_RANKS.map((rank) => ({ rank, suit })))
 
-// Card count, time to see the cards, time for recall. Seven cards are the five community cards
-// and two hole cards. The extreme range shortens the windows without changing the deck.
+// Card count, viewing time, recall time. Adding cards also gives the player time to see them
+// and enter their ranks and suits. Showdown boards add one revealed opponent's hand at a time.
 const LEVELS = [
-  [2, 7_000, 38_000], [2, 5_000, 35_000], [3, 6_500, 42_000], [3, 4_500, 38_000],
-  [4, 6_000, 43_000], [5, 7_000, 49_000], [5, 5_000, 45_000], [5, 3_500, 42_000],
-  [7, 9_000, 58_000], [7, 7_000, 54_000], [7, 5_000, 50_000], [7, 3_800, 46_000],
-  [7, 3_000, 43_000], [7, 2_400, 40_000],
+  [2, 7_000, 38_000], [2, 6_500, 38_000], [3, 8_000, 46_000], [3, 7_500, 46_000],
+  [4, 9_500, 54_000], [5, 11_000, 62_000], [5, 10_500, 62_000], [5, 10_000, 62_000],
+  [7, 14_000, 78_000], [7, 13_000, 78_000], [9, 18_000, 92_000], [9, 17_000, 92_000],
+  [11, 22_000, 106_000], [13, 26_000, 120_000],
 ] as const
 
-const RANK_START = 7
+const COMMUNITY_CARDS = 5
+const HAND_CARDS = 2
+const DECK_ROW_SIZE = 5
+const SHOWDOWN_MAX = LEVELS[LEVELS.length - 1][0]
+const MAX_CARDS = 30
+const RANK_START = MAX_CARDS
 const SUIT_START = RANK_START + POKER_RANKS.length
 const CONFIRM = SUIT_START + suits.length
+const START_RECALL = CONFIRM + 1
+const RESET_RANK = CONFIRM + 2
 
 interface State {
   cards: PokerCard[]
@@ -28,7 +36,20 @@ interface State {
 
 const matches = (answer: PokerCard | null, card: PokerCard) => answer?.rank === card.rank && answer.suit === card.suit
 const score = (s: State) => s.cards.filter((card, i) => matches(s.answers[i], card)).length
-const ready = (s: State) => s.rank === null && s.answers.every((answer) => answer !== null)
+const canSubmit = (s: State, answered: number) => s.rank === null && (s.cards.length > SHOWDOWN_MAX ? answered > 0 : answered === s.cards.length)
+
+export function growCardRecall(s: State, depth: number, rng: Rng): State {
+  const extra = Math.floor((MAX_CARDS - s.cards.length) * depth + 1e-9)
+  if (extra === 0) return s
+  const extraCards = rng.sample(deck.filter((card) => !s.cards.includes(card)), extra)
+  return {
+    ...s,
+    cards: [...s.cards, ...extraCards],
+    answers: [...s.answers, ...extraCards.map(() => null)],
+    previewMs: s.previewMs + extra * 3_000,
+    limitMs: s.limitMs + extra * 5_000,
+  }
+}
 
 export const cardRecall = {
   id: 'cardRecall',
@@ -41,19 +62,23 @@ export const cardRecall = {
   advance: (s) => s.phase === 'preview' ? { ...s, phase: 'recall' } : s,
   acceptsInput: (s) => s.phase === 'recall',
   tap(s, index) {
+    if (s.phase === 'preview' && index === START_RECALL) return { ...s, phase: 'recall' }
     if (s.phase !== 'recall' || !Number.isInteger(index)) return s
-    if (index === CONFIRM) return ready(s) ? { ...s, phase: 'done' } : s
+    if (index === CONFIRM) return canSubmit(s, s.answers.filter(Boolean).length) ? { ...s, phase: 'done' } : s
+    if (index === RESET_RANK) return s.rank === null ? s : { ...s, rank: null }
     if (index >= 0 && index < s.cards.length) {
       return index === s.active ? s : { ...s, active: index, rank: null }
     }
-    if (s.active === null) return s
+    const active = s.active
+    if (active === null) return s
     const rank = POKER_RANKS[index - RANK_START]
     if (rank) return { ...s, rank }
     const suit = suits[index - SUIT_START]
     if (!suit || !s.rank) return s
     const answer = { rank: s.rank, suit }
-    const answers = s.answers.map((previous, i) => i === s.active ? answer : previous)
-    const next = answers.findIndex((value) => value === null)
+    const answers = s.answers.map((previous, i) => i === active ? answer : previous)
+    const later = answers.findIndex((value, i) => i > active && value === null)
+    const next = later === -1 ? answers.indexOf(null) : later
     return { ...s, answers, active: next === -1 ? null : next, rank: null }
   },
   timeout: (s) => s.phase === 'done' ? s : { ...s, phase: 'done' },
@@ -66,14 +91,30 @@ export const cardRecall = {
   view(s): CardRecallView {
     const recalling = s.phase === 'recall'
     const preview = s.phase === 'preview'
-    const prompt = preview ? { key: 'play.cardRecallMemorize' }
-      : recalling ? { key: ready(s) ? 'play.cardRecallCheck' : 'play.cardRecallEnter' }
-        : { key: 'play.cardRecallResult', params: { correct: score(s), total: s.cards.length } }
+    const total = s.cards.length
+    const deckOrder = total > SHOWDOWN_MAX
+    const answered = s.answers.filter(Boolean).length
+    const prompt: PromptView = preview ? { key: 'play.cardRecallMemorize', params: { total } }
+      : recalling ? s.active === null
+        ? { key: 'play.cardRecallCheck' }
+        : { key: deckOrder ? s.rank ? 'play.cardRecallPickSuit' : 'play.cardRecallPickRank' : 'play.cardRecallEnter', params: { position: s.active + 1, total } }
+        : { key: 'play.cardRecallResult', params: { correct: score(s), total } }
+    const handCount = deckOrder ? 0 : Math.max(0, Math.floor((total - COMMUNITY_CARDS) / HAND_CARDS))
     return {
       kind: 'cardRecall',
       prompt,
-      privateCount: s.cards.length === 7 ? 2 : 0,
-      previewMs: preview ? s.previewMs : undefined,
+      hands: Array.from({ length: handCount }, (_, hand) => {
+        const start = COMMUNITY_CARDS + hand * HAND_CARDS
+        const title = hand === 0 ? { key: 'play.cardRecallPrivate' } : { key: 'play.cardRecallOpponent', params: { number: hand } }
+        return { start, end: start + HAND_CARDS, title }
+      }),
+      rows: deckOrder ? Array.from({ length: Math.ceil(total / DECK_ROW_SIZE) }, (_, row) => {
+        const start = row * DECK_ROW_SIZE
+        const end = Math.min(start + DECK_ROW_SIZE, total)
+        const empty = s.answers.slice(start, end).indexOf(null)
+        return { start, end, target: empty === -1 ? start : start + empty }
+      }) : undefined,
+      preview: preview ? { ms: s.previewMs, index: START_RECALL } : undefined,
       slots: s.cards.map((card, index) => {
         const active = recalling && index === s.active
         const draft = active ? s.rank : null
@@ -81,9 +122,11 @@ export const cardRecall = {
         return { index, rank: draft ?? shown?.rank, suit: draft ? undefined : shown?.suit, active, correct: s.phase === 'done' ? matches(s.answers[index], card) : undefined }
       }),
       input: recalling ? {
+        active: s.active,
         ranks: POKER_RANKS.map((value, i) => ({ value, index: RANK_START + i, disabled: s.active === null, selected: value === s.rank })),
         suits: suits.map((value, i) => ({ value, index: SUIT_START + i, disabled: !s.rank })),
-        submit: { index: CONFIRM, disabled: !ready(s) },
+        resetRank: s.rank ? RESET_RANK : undefined,
+        submit: { index: CONFIRM, disabled: !canSubmit(s, answered), answered },
       } : undefined,
     }
   },

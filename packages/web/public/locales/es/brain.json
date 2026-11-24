@@ -115,7 +115,7 @@
     },
     "cardRecall": {
       "name": "Memoria de cartas",
-      "desc": "Recuerda el valor, el palo y la posición de cada carta. Avanza hasta cinco cartas comunitarias y dos propias con menos tiempo para mirar."
+      "desc": "Recuerda el valor, el palo y el orden de cada carta. En niveles avanzados, memoriza hasta 30 cartas de una baraja."
     },
     "mazeRun": {
       "name": "Laberinto",
@@ -270,12 +270,19 @@
     "makeSquareButton": "Cuadrado x²",
     "makeSquareHint": "Toca un número para elevarlo al cuadrado. Si ya está al cuadrado, tócalo para deshacerlo.",
     "makeAnswer": "Una ecuación correcta",
-    "cardRecallMemorize": "Memoriza cada carta en su posición",
-    "cardRecallEnter": "Elige primero el valor y luego el palo de cada carta",
+    "cardRecallMemorize": "Memoriza {{total}} cartas en orden",
+    "cardRecallStart": "Ya las memoricé",
+    "cardRecallPickRank": "Carta {{position}} · Elige el valor",
+    "cardRecallPickSuit": "Carta {{position}} · Elige el palo",
+    "cardRecallChangeRank": "Cambiar valor",
+    "cardRecallRange": "Cartas {{start}}–{{end}}",
+    "cardRecallSubmit": "{{answered}}/{{total}} · Comprobar",
+    "cardRecallEnter": "Carta {{position}} de {{total}}. Elige primero el valor y luego el palo.",
     "cardRecallCheck": "Toca una carta para corregirla o confirma",
     "cardRecallResult": "{{correct}} de {{total}} cartas correctas",
     "cardRecallCommunity": "Cartas comunitarias",
-    "cardRecallPrivate": "Cartas propias",
+    "cardRecallPrivate": "Tu mano",
+    "cardRecallOpponent": "Rival {{number}}",
     "cardRecallPosition": "Carta {{position}}",
     "cardRecallSuits": {
       "spades": "Picas",
