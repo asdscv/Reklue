@@ -84,7 +84,7 @@ export function CodeBreakBoard({ view, onTap, width, demo }: Props<CodeBreakView
 
 export function MakeNumberBoard({ view, onTap, width, demo, onSkip }: Props<MakeNumberView>) {
   const { t } = useTranslation('brain')
-  return <div style={{ width }} className="space-y-3" data-testid="brain-make-number">
+  return <div style={{ width, maxWidth: '100%' }} className="space-y-3" data-testid="brain-make-number">
     <p className="text-center text-white/85" style={{ fontSize: demo ? 12 : 16 }}>
       {view.order === 'any' && `${t('play.makeAny')} · `}{t('play.makeTries', { count: view.tries.left })}
     </p>
