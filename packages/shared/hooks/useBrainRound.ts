@@ -733,6 +733,7 @@ function reducer(state: State, action: Action): State {
       // A miss's worked answer (a choice view's `stimulus.reveal`) or a right pattern's rule, once it
       // has been up long enough to be seen: on to the next trial now.
       if (!state.result || state.over || state.paused || state.revealSkipped) return state
+      if (manualReview(state)) return { ...state, revealSkipped: true }
       if (!missReveal(state) && !ruleReveal(state)) return state
       if (state.resultAt === null || action.now - state.resultAt < REVEAL_SKIP_AFTER_MS) return state
       return { ...state, revealSkipped: true }
@@ -743,6 +744,10 @@ function reducer(state: State, action: Action): State {
         stats: { ...state.stats, isNewBest: action.isNewBest, tierUp: action.tierUp, achievements: action.achievements, suggestRelax: action.suggestRelax },
       }
   }
+}
+
+function manualReview(s: Pick<State, 'gameId' | 'result'>): boolean {
+  return s.gameId === 'makeNumber' && !!s.result && !s.result.correct && !s.result.void
 }
 
 /** A missed choice trial whose view shows the worked answer (math's line, a pattern's rule): it stays up longer. */
@@ -1167,6 +1172,7 @@ export function useBrainRound(gameId: BrainGameId, platform: PlatformContext, op
     const result = state.result
     if (!result || state.over || state.paused) return
     const s = stateRef.current
+    if (manualReview(s) && !state.revealSkipped) return
     const delay = state.revealSkipped
       ? 0
       : result.void
@@ -1262,9 +1268,10 @@ export function useBrainRound(gameId: BrainGameId, platform: PlatformContext, op
         : null,
     /**
      * On with the next trial now — taken from 500ms after the result: a missed choice trial's worked
-     * answer (`stimulus.reveal`, up 2.4s) or a right pattern's rule. A tap on the board, Space / Enter.
+     * answer (`stimulus.reveal`, up 2.4s) or a right pattern's rule. Make the Number waits for Continue.
      */
     skipReveal,
+    reviewPending: manualReview(state) && !state.revealSkipped,
   }
 }
 

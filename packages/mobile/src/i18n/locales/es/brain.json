@@ -113,6 +113,10 @@
       "name": "Crea el número",
       "desc": "Usa cada número una sola vez para llegar al objetivo."
     },
+    "cardRecall": {
+      "name": "Memoria de cartas",
+      "desc": "Recuerda el valor, el palo y la posición de cada carta. Avanza hasta cinco cartas comunitarias y dos propias con menos tiempo para mirar."
+    },
     "mazeRun": {
       "name": "Laberinto",
       "desc": "Traza un camino hasta la bandera. Puedes retroceder en los callejones sin salida."
@@ -247,7 +251,7 @@
     "makeTries_other": "Quedan {{count}} intentos",
     "makeExpression": "Tu expresión",
     "makeSignSlot": "Espacio de operación {{position}}",
-    "makeValue": "Esta expresión da {{value}}. Prueba a cambiarla.",
+    "makeValue": "Valor calculado {{value}}",
     "mazeRunGo": "Traza un camino hasta la bandera",
     "mazeRunKeys_one": "Recoge {{count}} llaves en orden y llega a la bandera",
     "mazeRunKeys_other": "Recoge {{count}} llaves en orden y llega a la bandera",
@@ -262,7 +266,23 @@
     "mazeKey_other": "Llave {{count}}",
     "memorizeNumbers": "Recuerda las posiciones · del 1 al {{max}}",
     "memoryBadge": "Memoriza boca abajo",
-    "makeSquare": "Elevar al cuadrado el último número",
+    "makeSquare": "Elevar {{number}} al cuadrado",
+    "makeSquareButton": "Cuadrado x²",
+    "makeSquareHint": "Toca un número para elevarlo al cuadrado. Si ya está al cuadrado, tócalo para deshacerlo.",
+    "makeAnswer": "Una ecuación correcta",
+    "cardRecallMemorize": "Memoriza cada carta en su posición",
+    "cardRecallEnter": "Elige primero el valor y luego el palo de cada carta",
+    "cardRecallCheck": "Toca una carta para corregirla o confirma",
+    "cardRecallResult": "{{correct}} de {{total}} cartas correctas",
+    "cardRecallCommunity": "Cartas comunitarias",
+    "cardRecallPrivate": "Cartas propias",
+    "cardRecallPosition": "Carta {{position}}",
+    "cardRecallSuits": {
+      "spades": "Picas",
+      "hearts": "Corazones",
+      "clubs": "Tréboles",
+      "diamonds": "Diamantes"
+    },
     "difficulty": {
       "foundation": "Inicio fácil · sin límite de tiempo",
       "extreme": "Dificultad extrema"
@@ -654,7 +674,7 @@
       },
       "square": {
         "title": "También puedes usar cuadrados",
-        "body": "Pulsa ² tras un número para multiplicarlo por sí mismo: 3² = 9. Cada ficha se puede elevar al cuadrado una sola vez. Calcula primero los cuadrados, luego × y ÷, y después + y −. Cada operación nueva empieza con menos números y después se añaden más."
+        "body": "Elevar un número al cuadrado es multiplicarlo por sí mismo. Por ejemplo, 3² = 3 × 3 = 9. Pulsa Cuadrado y elige un número. Para deshacerlo, pulsa Cuadrado y elige el mismo número de nuevo. Calcula los cuadrados antes de × y ÷."
       }
     },
     "mazeRun": {

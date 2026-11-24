@@ -1,4 +1,4 @@
-import type { BrainGameId } from './types'
+import { BRAIN_SAVE_FORMAT, type BrainGameId } from './types'
 import { isSavedGameId } from './catalog'
 import { migrateLevelV1 } from './scale'
 
@@ -12,10 +12,10 @@ export type HistoryEntry = [day: number, level10: number, accuracy: number]
 
 export interface BrainHistory {
   /**
-   * 3 since the thinking games (2026-11-13; sync.ts BRAIN_HISTORY_FORMAT says why); 2 since the
+   * 4 adds Playing Card Recall. 3 introduced the thinking games (2026-11-13; sync.ts BRAIN_HISTORY_FORMAT says why); 2 since the
    * hard-content change (levels on the v2 scale). Older entries are converted once on reading.
    */
-  v: 3
+  v: typeof BRAIN_SAVE_FORMAT
   rounds: Partial<Record<BrainGameId, HistoryEntry[]>>
 }
 
@@ -23,7 +23,7 @@ export const HISTORY_PER_GAME = 8
 const EPOCH = Date.UTC(2024, 0, 1)
 
 export function emptyHistory(): BrainHistory {
-  return { v: 3, rounds: {} }
+  return { v: BRAIN_SAVE_FORMAT, rounds: {} }
 }
 
 export function dayNumber(day: string): number {
@@ -64,7 +64,7 @@ function rescaleEntry(id: BrainGameId, [day, level10, accuracy]: HistoryEntry): 
   return [day, Math.max(0, Math.min(5_000, Math.round(migrateLevelV1(id, level10 / 10) * 10))), accuracy]
 }
 
-/** Reads any version and returns v3: entries of a history older than v2 move to the v2 level scale, once (v2 → v3 changes nothing). */
+/** Reads any version and returns the current format: entries of a history older than v2 move to the v2 level scale, once (v2 → v3 changes nothing). */
 export function parseHistory(raw: string | null | undefined): BrainHistory {
   if (!raw) return emptyHistory()
   try {
@@ -77,7 +77,7 @@ export function parseHistory(raw: string | null | undefined): BrainHistory {
       const entries = list.filter(isEntry).slice(-HISTORY_PER_GAME)
       rounds[id as BrainGameId] = oldScale ? entries.map((e) => rescaleEntry(id as BrainGameId, e)) : entries
     }
-    return { v: 3, rounds }
+    return { v: BRAIN_SAVE_FORMAT, rounds }
   } catch {
     return emptyHistory()
   }

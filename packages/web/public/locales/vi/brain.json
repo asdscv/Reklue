@@ -113,6 +113,10 @@
       "name": "Tạo số",
       "desc": "Dùng mỗi số đúng một lần để tạo số đích."
     },
+    "cardRecall": {
+      "name": "Nhớ bài Tây",
+      "desc": "Ghi nhớ hạng, chất và vị trí của từng lá bài. Ở mức cao hơn, hãy nhớ 5 lá bài chung và 2 lá bài riêng với ít thời gian quan sát hơn."
+    },
     "mazeRun": {
       "name": "Mê cung",
       "desc": "Vẽ đường đến lá cờ. Có thể quay lại khi gặp ngõ cụt."
@@ -247,7 +251,7 @@
     "makeTries_other": "Còn {{count}} lượt",
     "makeExpression": "Biểu thức của bạn",
     "makeSignSlot": "Ô dấu phép tính {{position}}",
-    "makeValue": "Biểu thức này bằng {{value}}. Hãy sửa lại.",
+    "makeValue": "Giá trị tính được {{value}}",
     "mazeRunGo": "Vẽ đường đến lá cờ",
     "mazeRunKeys_one": "Nhặt {{count}} chìa theo thứ tự rồi đến cờ",
     "mazeRunKeys_other": "Nhặt {{count}} chìa theo thứ tự rồi đến cờ",
@@ -262,7 +266,23 @@
     "mazeKey_other": "Chìa số {{count}}",
     "memorizeNumbers": "Nhớ vị trí các số · 1 đến {{max}}",
     "memoryBadge": "Nhớ thẻ úp",
-    "makeSquare": "Bình phương số cuối",
+    "makeSquare": "Bình phương {{number}}",
+    "makeSquareButton": "Bình phương x²",
+    "makeSquareHint": "Chạm vào số cần bình phương. Chạm vào số đã bình phương để bỏ bình phương.",
+    "makeAnswer": "Một phương trình đúng",
+    "cardRecallMemorize": "Ghi nhớ từng lá bài theo vị trí",
+    "cardRecallEnter": "Chọn hạng rồi chọn chất cho từng lá bài",
+    "cardRecallCheck": "Chạm vào lá bài để sửa hoặc xác nhận",
+    "cardRecallResult": "Đúng {{correct}} trên {{total}} lá bài",
+    "cardRecallCommunity": "Bài chung",
+    "cardRecallPrivate": "Bài riêng",
+    "cardRecallPosition": "Lá bài thứ {{position}}",
+    "cardRecallSuits": {
+      "spades": "Bích",
+      "hearts": "Cơ",
+      "clubs": "Tép",
+      "diamonds": "Rô"
+    },
     "difficulty": {
       "foundation": "Khởi đầu nhẹ nhàng · không giới hạn thời gian",
       "extreme": "Độ khó cực cao"
@@ -654,7 +674,7 @@
       },
       "square": {
         "title": "Dùng cả bình phương",
-        "body": "Nhấn ² sau một số để nhân số đó với chính nó: 3² = 9. Mỗi ô số chỉ được bình phương một lần. Tính bình phương trước, rồi × và ÷, cuối cùng + và −. Phép tính mới bắt đầu với ít số rồi tăng dần."
+        "body": "Bình phương một số là nhân số đó với chính nó. Ví dụ, 3² = 3 × 3 = 9. Chạm vào Bình phương rồi chọn một số. Để bỏ bình phương, chạm vào Bình phương rồi chọn lại số đó. Tính bình phương trước phép nhân và phép chia."
       }
     },
     "mazeRun": {

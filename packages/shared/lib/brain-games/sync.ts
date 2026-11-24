@@ -1,4 +1,4 @@
-import type { BrainGameId, RetiredGameId } from './types'
+import { BRAIN_SAVE_FORMAT, type BrainGameId, type RetiredGameId } from './types'
 import { type BrainProgress, type GameProgress, type SessionLog, emptyProgress, parseProgress } from './progress'
 import { type BrainHistory, type HistoryEntry, HISTORY_PER_GAME, parseHistory } from './history'
 import { type BrainMeta, type SkillEstimate, emptyMeta, orMask, parseMeta } from './meta'
@@ -27,11 +27,12 @@ import { BRAIN_GAMES } from './catalog'
  * so it would wipe the new games' estimates, tiers, practice and trends from the account (a fresh
  * phone then re-places them, and a sticky tier is gone). At v3 that app stops syncing instead; its
  * parseProgress kept unknown game ids, but all three move together so no client is half-locked.
- * The content of a v2 document is valid v3 — reading it only changes the number.
+ * 4 adds Playing Card Recall and protects its history and meta from the same loss on v3 clients.
+ * Documents from v2 and v3 keep their levels and content when read by the current client.
  */
-export const BRAIN_PROGRESS_FORMAT = 3
-export const BRAIN_HISTORY_FORMAT = 3
-export const BRAIN_META_FORMAT = 3
+export const BRAIN_PROGRESS_FORMAT = BRAIN_SAVE_FORMAT
+export const BRAIN_HISTORY_FORMAT = BRAIN_SAVE_FORMAT
+export const BRAIN_META_FORMAT = BRAIN_SAVE_FORMAT
 /** Mirrors the CHECKs in migration 288 (octet_length of the jsonb text). */
 export const BRAIN_SAVE_MAX_BYTES = 16_384
 
@@ -304,7 +305,7 @@ export function mergeProgress(local: BrainProgress, remote: BrainProgress, sides
 
   return {
     ...local,
-    v: 3,
+    v: BRAIN_SAVE_FORMAT,
     games,
     totalRounds: Math.max(local.totalRounds, remote.totalRounds),
     totalPoints: Math.max(local.totalPoints, remote.totalPoints),
@@ -349,7 +350,7 @@ export function mergeHistory(local: BrainHistory, remote: BrainHistory): BrainHi
     merged.sort((x, y) => x[0] - y[0] || (key(x) < key(y) ? -1 : key(x) > key(y) ? 1 : 0))
     rounds[id] = merged.slice(-HISTORY_PER_GAME)
   }
-  return { v: 3, rounds }
+  return { v: BRAIN_SAVE_FORMAT, rounds }
 }
 
 // ── meta ────────────────────────────────────────────────────────────────────
@@ -404,7 +405,7 @@ export function mergeMeta(local: BrainMeta, remote: BrainMeta, sides: GameSides 
   }
   return {
     ...local,
-    v: 3,
+    v: BRAIN_SAVE_FORMAT,
     sk,
     tier: maxPerGame(local.tier, remote.tier),
     seen: orMask(local.seen, remote.seen),

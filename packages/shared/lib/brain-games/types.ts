@@ -1,5 +1,8 @@
 import type { Rng } from './rng'
 
+/** One version for the progress, history and meta documents synced together. */
+export const BRAIN_SAVE_FORMAT = 4
+
 export type BrainGameId =
   | 'memoryGrid'
   | 'sequence'
@@ -15,6 +18,7 @@ export type BrainGameId =
   | 'codeBreak'
   | 'makeNumber'
   | 'mazeRun'
+  | 'cardRecall'
 
 /**
  * Games removed from the product (Quick Eye, by the owner 2026-11-13). Their ids live on only where
@@ -250,17 +254,14 @@ export interface CodeBreakView {
 
 export type MakeBinaryOp = '+' | '−' | '×' | '÷'
 export type MakeOp = MakeBinaryOp | '²' | '(' | ')'
+export type MakeKeypadOp = Exclude<MakeOp, '²'>
 
 export type MakeToken = { kind: 'num'; value: number; tile: number } | { kind: 'op'; op: MakeOp }
 
-export type MakeEquationPart = { text: string; control?: never } | {
-  text: string
-  control: 'sign' | 'tile'
-  index: number
-  position: number
-  selected: boolean
-  disabled: boolean
-}
+export type MakeEquationPart = { text: string; control?: never } | (
+  { text: string; index: number; selected: boolean; disabled: boolean } &
+  ({ control: 'sign'; position: number } | { control: 'square'; value: number })
+)
 
 /**
  * Make the Number (숫자 만들기): build an expression that comes to `target`, every tile used exactly
@@ -280,13 +281,15 @@ export interface MakeNumberView {
   order: 'fixed' | 'any'
   /** The number keypad for free-order play. Fixed-order numbers appear in the equation. */
   tiles: { value: number; index: number; used: boolean; disabled: boolean }[]
-  /** The available operators. The current choice is marked when editing a sign. */
-  ops: { op: MakeOp; index: number; disabled: boolean; selected?: boolean }[]
+  /** The keypad operators. The current choice is marked when editing a sign. */
+  ops: { op: MakeKeypadOp; index: number; disabled: boolean; selected?: boolean }[]
+  /** Activate this control, then select a number in the equation to toggle its square. */
+  square?: { index: number; selected: boolean; disabled: boolean }
   undo: { index: number; disabled: boolean }
   clear: { index: number; disabled: boolean }
   /** Enabled once every tile is used and the expression is complete. */
   submit: { index: number; disabled: boolean }
-  /** The goal equation, including any editable signs, with the target on the right. */
+  /** The goal equation with sign and square controls and the target on the right. */
   equation: MakeEquationPart[]
   /** Submits left in this trial (dots, never hearts). */
   tries: { left: number; total: number }
@@ -298,6 +301,26 @@ export interface MakeNumberView {
    * digits ('( 8 − 2 ) × 4 = 24'); platforms format numbers and wrap before an operator.
    */
   reveal?: { lines: string[] }
+}
+
+export const POKER_RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'] as const
+export const POKER_SUITS = { spades: '♠︎', hearts: '♥︎', clubs: '♣︎', diamonds: '♦︎' } as const
+export type PokerRank = typeof POKER_RANKS[number]
+export type PokerSuit = keyof typeof POKER_SUITS
+export interface PokerCard { rank: PokerRank; suit: PokerSuit }
+
+export interface CardRecallView {
+  kind: 'cardRecall'
+  prompt: PromptView
+  /** The last two positions are private cards when the full hold'em board is shown. */
+  privateCount: 0 | 2
+  previewMs?: number
+  slots: { index: number; rank?: PokerRank; suit?: PokerSuit; active: boolean; correct?: boolean }[]
+  input?: {
+    ranks: { value: PokerRank; index: number; disabled: boolean; selected: boolean }[]
+    suits: { value: PokerSuit; index: number; disabled: boolean }[]
+    submit: { index: number; disabled: boolean }
+  }
 }
 
 /** A maze cell's walls, as bits of `MazeView.walls[i]`. */
@@ -363,7 +386,7 @@ export interface MazeView {
   answer?: { path: number[]; walls: number[] }
 }
 
-export type RoundView = (GridView | ChoiceView | SetMatchView | CodeBreakView | MakeNumberView | MazeView) & { difficulty?: 'foundation' | 'extreme' }
+export type RoundView = (GridView | ChoiceView | SetMatchView | CodeBreakView | MakeNumberView | MazeView | CardRecallView) & { difficulty?: 'foundation' | 'extreme' }
 
 export interface RoundOutcome {
   correct: boolean

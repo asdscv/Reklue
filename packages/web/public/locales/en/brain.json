@@ -113,6 +113,10 @@
       "name": "Make the Number",
       "desc": "Use every number exactly once to make the target."
     },
+    "cardRecall": {
+      "name": "Playing Card Recall",
+      "desc": "Remember each card’s rank, suit and position. Work up to five community cards and two hole cards with less time to look."
+    },
     "mazeRun": {
       "name": "Maze Run",
       "desc": "Trace a path to the flag. Backtrack when you reach a dead end."
@@ -247,7 +251,7 @@
     "makeTries_other": "{{count}} tries left",
     "makeExpression": "Your expression",
     "makeSignSlot": "Operator slot {{position}}",
-    "makeValue": "This makes {{value}}. Try editing it.",
+    "makeValue": "Calculated value {{value}}",
     "mazeRunGo": "Trace a path to the flag",
     "mazeRunKeys_one": "Collect {{count}} keys in number order, then reach the flag",
     "mazeRunKeys_other": "Collect {{count}} keys in number order, then reach the flag",
@@ -262,7 +266,23 @@
     "mazeKey_other": "Key {{count}}",
     "memorizeNumbers": "Remember the positions · 1 to {{max}}",
     "memoryBadge": "Face-down memory",
-    "makeSquare": "Square the last number",
+    "makeSquare": "Square {{number}}",
+    "makeSquareButton": "Square x²",
+    "makeSquareHint": "Tap a number to square it. Tap a squared number to undo it.",
+    "makeAnswer": "One correct equation",
+    "cardRecallMemorize": "Remember each card in its position",
+    "cardRecallEnter": "Choose a rank, then a suit, for each card",
+    "cardRecallCheck": "Tap a card to edit it or confirm your answer",
+    "cardRecallResult": "{{correct}} of {{total}} cards correct",
+    "cardRecallCommunity": "Community cards",
+    "cardRecallPrivate": "Hole cards",
+    "cardRecallPosition": "Card {{position}}",
+    "cardRecallSuits": {
+      "spades": "Spades",
+      "hearts": "Hearts",
+      "clubs": "Clubs",
+      "diamonds": "Diamonds"
+    },
     "difficulty": {
       "foundation": "Gentle start · no time limit",
       "extreme": "Extreme level"
@@ -654,7 +674,7 @@
       },
       "square": {
         "title": "Squaring a number",
-        "body": "Tap ² after a number to multiply it by itself: 3² = 9. Each tile can be squared once. Square first, then × and ÷, then + and −. A new operator starts with fewer numbers, then more are added."
+        "body": "Squaring means multiplying a number by itself. For example, 3² = 3 × 3 = 9. Tap Square and then pick a number. To undo, tap Square and pick the same number again. Calculate squares before × and ÷."
       }
     },
     "mazeRun": {

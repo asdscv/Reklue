@@ -17,7 +17,7 @@ import {
 } from '@reklue/shared/lib/brain-games'
 import { formatCount, formatDecimal } from '@reklue/shared/lib/format-number'
 import { testProps } from '../../utils/testProps'
-import { SetMatchBoard, CodeBreakBoard, MakeNumberBoard, MazeBoard } from './ThinkingBoards'
+import { CardRecallBoard, SetMatchBoard, CodeBreakBoard, MakeNumberBoard, MazeBoard } from './ThinkingBoards'
 import { BOARD_STRIP_H, CANVAS_INK, CELL_INK, FX, type FeatherName } from './brain-ui'
 import { GradientFill } from './GameCanvas'
 import { BrainInstantMotion, useDrain, useMotion, type Motion } from './motion'
@@ -44,7 +44,7 @@ export interface BoardProps {
   demo?: boolean
   /** The round is paused, or a card is over it: a memorise bar holds. */
   paused?: boolean
-  /** A tap on the answer's reveal moves on: a choice's worked line (on with the next trial). */
+  /** Move on from a worked answer when the player taps Continue or skips a timed reveal. */
   onSkipReveal?: () => void
   /** Demo only: each tap target's view, by the index a tap on it sends. */
   registerTarget?: (index: number, node: RNView | null) => void
@@ -61,6 +61,7 @@ function BoardContent(props: BoardProps) {
   if (view.kind === 'setMatch') return <SetMatchBoard {...props} view={view} />
   if (view.kind === 'codeBreak') return <CodeBreakBoard {...props} view={view} />
   if (view.kind === 'makeNumber') return <MakeNumberBoard {...props} view={view} />
+  if (view.kind === 'cardRecall') return <CardRecallBoard {...props} view={view} />
   return <MazeBoard {...props} view={view} />
 }
 

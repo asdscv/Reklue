@@ -126,9 +126,9 @@ describe('migrateLevelV1 (GAMES_DIFFICULTY_PLAN §2.2)', () => {
 })
 
 describe('reading a v1 save', () => {
-  it('progress: board-game levels on the v2 scale, their best scores cleared, Quick Eye and the rest kept, written as v3', () => {
+  it('progress: board-game levels on the v2 scale, their best scores cleared, Quick Eye and the rest kept, written as v4', () => {
     const p = parseProgress(V1_PROGRESS)
-    expect(p.v).toBe(3)
+    expect(p.v).toBe(4)
     const raw = JSON.parse(V1_PROGRESS)
     for (const id of ['math', 'series', 'oddOneOut', 'schulte', 'stroop', 'pairs', 'memoryGrid', 'sequence'] as const) {
       expect(p.games[id]?.level, id).toBeCloseTo(migrateLevelV1(id, raw.games[id].level), 9)
@@ -150,7 +150,7 @@ describe('reading a v1 save', () => {
 
   it('meta: the rebuilt games re-open their estimate on the v2 scale (sd 9, n 0); span estimates stay, clamped; tiers stay', () => {
     const m = parseMeta(V1_META)
-    expect(m.v).toBe(3)
+    expect(m.v).toBe(4)
     expect(m.sk.math).toEqual({ mu: migrateLevelV1('math', 3.4), sd: 9, n: 0, day: 1000 })
     expect(m.sk.oddOneOut).toEqual({ mu: 23.5, sd: 9, n: 0, day: 1001 })
     expect(m.sk.pairs).toEqual({ mu: 6, sd: 9, n: 0, day: 1002 })
@@ -166,7 +166,7 @@ describe('reading a v1 save', () => {
   it('history: entries move to the v2 scale (a history with no version is v1), once', () => {
     const v1 = JSON.stringify({ v: 1, rounds: { math: [[1000, 30, 80], [1001, 100, 90]], oddOneOut: [[1000, 260, 70]], quickEye: [[1000, 72, 75]] } })
     const h = parseHistory(v1)
-    expect(h.v).toBe(3)
+    expect(h.v).toBe(4)
     expect(h.rounds.math).toEqual([[1000, 24, 80], [1001, 55, 90]])
     expect(h.rounds.oddOneOut).toEqual([[1000, 235, 70]])
     expect((h.rounds as Record<string, unknown>).quickEye).toEqual([[1000, 72, 75]])
@@ -184,28 +184,26 @@ describe('reading a v1 save', () => {
     expect(parseProgress(serializeProgress(p))).toEqual(p)
     expect(parseProgress(serializeProgress(parseProgress(serializeProgress(p))))).toEqual(p)
     expect(parseMeta(serializeMeta(m))).toEqual(m)
-    // New records are v3 from the start; a format from a newer app reads as nothing.
-    expect([emptyProgress().v, emptyMeta().v, emptyHistory().v]).toEqual([3, 3, 3])
-    expect(parseProgress('{"v":4,"games":{}}')).toEqual(emptyProgress())
-    expect(parseMeta('{"v":4}')).toEqual(emptyMeta())
+    // New records are v4 from the start; a format from a newer app reads as nothing.
+    expect([emptyProgress().v, emptyMeta().v, emptyHistory().v]).toEqual([4, 4, 4])
+    expect(parseProgress('{"v":5,"games":{}}')).toEqual(emptyProgress())
+    expect(parseMeta('{"v":5}')).toEqual(emptyMeta())
   })
 })
 
 describe('the format lock', () => {
-  it('this app writes v3; an app that only knows v1 or v2 sees every written document as newer and stops syncing', () => {
-    expect([BRAIN_PROGRESS_FORMAT, BRAIN_HISTORY_FORMAT, BRAIN_META_FORMAT]).toEqual([3, 3, 3])
+  it('writes v4 to prevent earlier apps from discarding Playing Card Recall history and meta', () => {
+    expect([BRAIN_PROGRESS_FORMAT, BRAIN_HISTORY_FORMAT, BRAIN_META_FORMAT]).toEqual([4, 4, 4])
     const local = { progress: parseProgress(V1_PROGRESS), history: emptyHistory(), meta: parseMeta(V1_META) }
     const { encoded } = reconcile(local, null)
-    // An old app's check (its formats were 1, then 2): every document is newer.
-    for (const doc of [encoded.progress, encoded.history, encoded.meta]) expect(docVersion(doc)).toBeGreaterThan(2)
-    // This app: a v1 or v2 copy is older, never "newer"; a v4 one is.
+    for (const doc of [encoded.progress, encoded.history, encoded.meta]) expect(docVersion(doc)).toBeGreaterThan(3)
     expect(isNewerFormat({ progress: { v: 1 }, history: { v: 1 }, meta: { v: 1 } })).toBe(false)
     expect(isNewerFormat({ progress: { v: 2 }, history: { v: 2 }, meta: { v: 2 } })).toBe(false)
     expect(isNewerFormat({ progress: { v: 3 }, history: { v: 3 }, meta: { v: 3 } })).toBe(false)
-    expect(isNewerFormat({ progress: { v: 3 }, history: { v: 3 }, meta: { v: 4 } })).toBe(true)
+    expect(isNewerFormat({ progress: { v: 4 }, history: { v: 4 }, meta: { v: 5 } })).toBe(true)
   })
 
-  it('a v1 cloud copy is converted before it is merged — max(bestLevel) compares like with like — and written back as v3', () => {
+  it('a v1 cloud copy is converted before it is merged — max(bestLevel) compares like with like — and written back as v4', () => {
     // This device already plays on the v2 scale: math best 5. The cloud holds an old app's copy at v1 math best 20 (= 10 on v2).
     const p = emptyProgress()
     const local = { progress: { ...p, games: { math: { level: 4, bestLevel: 5, rounds: 10, wins: 8 } } }, history: emptyHistory(), meta: emptyMeta() }
@@ -220,7 +218,7 @@ describe('the format lock', () => {
     expect(r.merged.meta.sk.math).toEqual({ mu: migrateLevelV1('math', 18), sd: 9, n: 0, day: 1000 })
     expect(r.merged.history.rounds.math).toEqual([[1000, Math.round(migrateLevelV1('math', 18) * 10), 90]])
     expect(r.push).toBe(true)
-    expect([r.encoded.progress.v, r.encoded.history.v, r.encoded.meta.v]).toEqual([3, 3, 3])
+    expect([r.encoded.progress.v, r.encoded.history.v, r.encoded.meta.v]).toEqual([4, 4, 4])
     // Pushed and read back (as the next sync does): nothing changes, nothing to push.
     const again = reconcile(r.merged, JSON.parse(JSON.stringify(r.encoded)))
     expect(again.push).toBe(false)
@@ -228,18 +226,18 @@ describe('the format lock', () => {
   })
 })
 
-describe('save format v3 (the thinking games, 2026-11-13)', () => {
-  /** The games a v2 app knows; anything else in the catalogue is new in v3. */
+describe('save formats for new games', () => {
+  /** The games a v2 app knows; the later games need their history and meta preserved. */
   const V2_GAMES = ['math', 'series', 'oddOneOut', 'schulte', 'stroop', 'pairs', 'memoryGrid', 'sequence']
   const NEW_GAMES = BRAIN_GAMES.map((g) => g.id).filter((id) => !V2_GAMES.includes(id))
   /** A document as the production (v2) app writes it: this app's content under the number 2. */
   const asV2 = (json: string) => JSON.stringify({ ...JSON.parse(json), v: 2 })
 
-  it('the new games are the four thinking games', () => {
-    expect(NEW_GAMES.sort()).toEqual(['codeBreak', 'makeNumber', 'mazeRun', 'setMatch'])
+  it('the catalogue includes the thinking games and Playing Card Recall added after v2', () => {
+    expect([...NEW_GAMES].sort()).toEqual(['cardRecall', 'codeBreak', 'makeNumber', 'mazeRun', 'setMatch'])
   })
 
-  it('v2 → v3 is idempotent: the content is read as it is, only the number moves, and reading again changes nothing', () => {
+  it('v2 → v4 is idempotent: the content is read as it is, only the number moves, and reading again changes nothing', () => {
     const p3 = parseProgress(V1_PROGRESS)
     const m3 = parseMeta(V1_META)
     const h3 = parseHistory(JSON.stringify({ v: 1, rounds: { math: [[1000, 30, 80]], oddOneOut: [[1000, 260, 70]] } }))
@@ -247,12 +245,15 @@ describe('save format v3 (the thinking games, 2026-11-13)', () => {
     const m2 = asV2(serializeMeta(m3))
     const h2 = asV2(serializeHistory(h3))
     expect([JSON.parse(p2).v, JSON.parse(m2).v, JSON.parse(h2).v]).toEqual([2, 2, 2])
-    // Read once: v3, the same content — no level is moved to a new scale a second time.
+    // Read once: v4, the same content — no level is moved to a new scale a second time.
     expect(parseProgress(p2)).toEqual(p3)
     expect(parseMeta(m2)).toEqual(m3)
     expect(parseHistory(h2)).toEqual(h3)
     expect(parseProgress(p2).games.math?.level).toBeCloseTo(2.35)
     expect(parseHistory(h2).rounds.math).toEqual([[1000, 24, 80]])
+    expect(parseProgress(JSON.stringify({ ...p3, v: 3 }))).toEqual(p3)
+    expect(parseMeta(JSON.stringify({ ...m3, v: 3 }))).toEqual(m3)
+    expect(parseHistory(JSON.stringify({ ...h3, v: 3 }))).toEqual(h3)
     // Read, written and read again, as many times as a sync loop likes: nothing moves.
     let p = parseProgress(p2)
     let m = parseMeta(m2)
@@ -263,7 +264,7 @@ describe('save format v3 (the thinking games, 2026-11-13)', () => {
       h = parseHistory(serializeHistory(h))
     }
     expect([p, m, h]).toEqual([p3, m3, h3])
-    expect([p.v, m.v, h.v]).toEqual([3, 3, 3])
+    expect([p.v, m.v, h.v]).toEqual([4, 4, 4])
   })
 
   it('every document keeps the new games through parse and serialize — what a v2 app would drop', () => {
@@ -293,7 +294,7 @@ describe('save format v3 (the thinking games, 2026-11-13)', () => {
     expect(p.practiced).toEqual(NEW_GAMES)
   })
 
-  it('a v2 cloud copy (the old app) merges into a v3 device without losing either side, goes up as v3, and the next sync is quiet', () => {
+  it('a v2 cloud copy (the old app) merges into a v3 device without losing either side, goes up as v4, and the next sync is quiet', () => {
     // This device has played the thinking games; the cloud holds the old app's copy with more Quick Math.
     const p = emptyProgress()
     const local = {
@@ -317,7 +318,7 @@ describe('save format v3 (the thinking games, 2026-11-13)', () => {
     expect(r.merged.meta.sk.math).toEqual({ mu: 8, sd: 1, n: 200, day: 1000 })
     expect(r.merged.history.rounds.math).toEqual([[1000, 80, 90]])
     expect(r.push).toBe(true)
-    expect([r.encoded.progress.v, r.encoded.history.v, r.encoded.meta.v]).toEqual([3, 3, 3])
+    expect([r.encoded.progress.v, r.encoded.history.v, r.encoded.meta.v]).toEqual([4, 4, 4])
     // Once it is up, the old app sees a newer format and stops instead of pushing a copy without setMatch.
     for (const doc of [r.encoded.progress, r.encoded.history, r.encoded.meta]) expect(docVersion(doc)).toBeGreaterThan(2)
     const again = reconcile(r.merged, JSON.parse(JSON.stringify(r.encoded)))

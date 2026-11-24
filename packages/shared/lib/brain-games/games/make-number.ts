@@ -1,4 +1,4 @@
-import type { BrainGameDef, CreateContext, MakeBinaryOp, MakeEquationPart, MakeNumberView, MakeOp, MakeToken } from '../types'
+import type { BrainGameDef, CreateContext, MakeBinaryOp, MakeEquationPart, MakeKeypadOp, MakeNumberView, MakeOp, MakeToken } from '../types'
 import type { Rng } from '../rng'
 
 /**
@@ -931,7 +931,6 @@ type FixedInput = {
   signs: (MakeBinaryOp | null)[]
   squares: boolean[]
   signSlot: number
-  squareTile: number
 }
 
 type FreeInput = { order: 'any'; tokens: MakeToken[]; signSlot: number | null }
@@ -941,7 +940,9 @@ export interface MakeNumberState {
   /** In the order shown. */
   tiles: number[]
   target: number
-  ops: MakeOp[]
+  ops: MakeKeypadOp[]
+  canSquare: boolean
+  squarePicking: boolean
   witness: MakeToken[]
   input: MakeNumberInput
   undoStack: MakeNumberInput[]
@@ -969,10 +970,16 @@ const idx = {
   undo: (s: MakeNumberState) => s.tiles.length + s.ops.length,
   clear: (s: MakeNumberState) => s.tiles.length + s.ops.length + 1,
   submit: (s: MakeNumberState) => s.tiles.length + s.ops.length + 2,
-  slot: (s: MakeNumberState, i: number) => s.tiles.length + s.ops.length + 3 + i,
+  squareToggle: (s: MakeNumberState) => s.tiles.length + s.ops.length + 3,
+  square: (s: MakeNumberState, tile: number) => s.tiles.length + s.ops.length + 4 + tile,
+  slot: (s: MakeNumberState, i: number) => 2 * s.tiles.length + s.ops.length + 4 + i,
 }
 
 const isBinary = (o: MakeOp): o is MakeBinaryOp => o === '+' || o === '−' || o === '×' || o === '÷'
+
+function canPickSquare(s: MakeNumberState): boolean {
+  return s.canSquare && (s.input.order === 'fixed' || s.input.tokens.some((t) => t.kind === 'num'))
+}
 
 function startInput(order: MakeNumberInput['order'], tileCount: number): MakeNumberInput {
   if (order === 'any') return { order, tokens: [], signSlot: null }
@@ -981,16 +988,14 @@ function startInput(order: MakeNumberInput['order'], tileCount: number): MakeNum
     signs: Array.from({ length: tileCount - 1 }, () => null),
     squares: Array.from({ length: tileCount }, () => false),
     signSlot: 0,
-    squareTile: 0,
   }
 }
 
-function opEnabled(s: MakeNumberState, o: MakeOp): boolean {
+function opEnabled(s: MakeNumberState, o: MakeKeypadOp): boolean {
   const input = s.input
-  if (input.order === 'fixed') return isBinary(o) || o === '²'
+  if (input.order === 'fixed') return isBinary(o)
   if (isBinary(o) && input.signSlot !== null) return true
   const want = expectsOperand(input.tokens)
-  if (o === '²') return input.tokens.at(-1)?.kind === 'num'
   if (o === '(') return want && usedTiles(input.tokens).size < s.tiles.length
   if (o === ')') return !want && openBrackets(input.tokens) > 0
   return !want
@@ -1013,11 +1018,7 @@ function fixedTokens(tiles: readonly number[], input: FixedInput): MakeToken[] {
   return tokens
 }
 
-function putFixedOperator(input: FixedInput, o: MakeOp): FixedInput {
-  if (o === '²') {
-    const squares = input.squares.map((squared, i) => i === input.squareTile ? !squared : squared)
-    return { ...input, squares }
-  }
+function putFixedSign(input: FixedInput, o: MakeKeypadOp): FixedInput {
   const { signs, signSlot } = input
   if (!isBinary(o) || signs[signSlot] === o) return input
   const updated = signs.map((sign, i) => i === signSlot ? o : sign)
@@ -1025,7 +1026,26 @@ function putFixedOperator(input: FixedInput, o: MakeOp): FixedInput {
   // Fill from left to right by default. A tap can choose any slot at any time.
   const next = updated.indexOf(null, signSlot + 1)
   const first = updated.indexOf(null)
-  return { ...input, signs: updated, signSlot: next >= 0 ? next : first >= 0 ? first : signSlot, squareTile: signSlot + 1 }
+  return { ...input, signs: updated, signSlot: next >= 0 ? next : first >= 0 ? first : signSlot }
+}
+
+function toggleSquare(input: MakeNumberInput, tile: number): MakeNumberInput {
+  if (input.order === 'fixed') {
+    const squares = input.squares.map((squared, i) => i === tile ? !squared : squared)
+    return { ...input, squares }
+  }
+  const numberIndex = input.tokens.findIndex((t) => t.kind === 'num' && t.tile === tile)
+  if (numberIndex < 0) return input
+  const at = numberIndex + 1
+  const next = input.tokens[at]
+  const squared = next?.kind === 'op' && next.op === '²'
+  const tokens = [...input.tokens]
+  if (squared) tokens.splice(at, 1)
+  else tokens.splice(at, 0, op('²'))
+  // A selected sign stays selected if its token moves after the square edit.
+  const { signSlot } = input
+  const selected = signSlot !== null && signSlot >= at ? signSlot + (squared ? -1 : 1) : signSlot
+  return { ...input, tokens, signSlot: selected }
 }
 
 function selectSign(input: MakeNumberInput, position: number): MakeNumberInput {
@@ -1040,22 +1060,24 @@ function selectSign(input: MakeNumberInput, position: number): MakeNumberInput {
 function equationParts(s: MakeNumberState, ready: boolean, done: boolean): MakeEquationPart[] {
   const { input } = s
   const parts: MakeEquationPart[] = []
+  const number = (value: number, tile: number, squared: boolean): MakeEquationPart => {
+    const text = squared ? `${value}²` : String(value)
+    return s.canSquare ? { text, control: 'square', value, index: idx.square(s, tile), selected: squared, disabled: done || !s.squarePicking } : { text }
+  }
   if (input.order === 'fixed') {
-    const canSquare = s.ops.includes('²')
     for (const [i, value] of s.tiles.entries()) {
-      if (i > 0) parts.push({ text: input.signs[i - 1] ?? '□', control: 'sign', position: i, index: idx.slot(s, i - 1), selected: input.signSlot === i - 1, disabled: done })
-      const text = `${value}${input.squares[i] ? '²' : ''}`
-      parts.push(canSquare ? { text, control: 'tile', position: i + 1, index: i, selected: input.squareTile === i, disabled: done } : { text })
+      if (i > 0) parts.push({ text: input.signs[i - 1] ?? '□', control: 'sign', position: i, index: idx.slot(s, i - 1), selected: !s.squarePicking && input.signSlot === i - 1, disabled: done || s.squarePicking })
+      parts.push(number(value, i, input.squares[i]))
     }
   } else {
     let signNumber = 0
     for (const [i, token] of input.tokens.entries()) {
       if (token.kind === 'num') {
         const next = input.tokens[i + 1]
-        parts.push({ text: `${token.value}${next?.kind === 'op' && next.op === '²' ? '²' : ''}` })
+        parts.push(number(token.value, token.tile, next?.kind === 'op' && next.op === '²'))
       } else if (isBinary(token.op)) {
         signNumber++
-        parts.push({ text: token.op, control: 'sign', position: signNumber, index: idx.slot(s, i), selected: input.signSlot === i, disabled: done })
+        parts.push({ text: token.op, control: 'sign', position: signNumber, index: idx.slot(s, i), selected: !s.squarePicking && input.signSlot === i, disabled: done || s.squarePicking })
       } else if (token.op !== '²') {
         parts.push({ text: token.op })
       }
@@ -1071,9 +1093,9 @@ function fixedSolution(s: MakeNumberState, input: FixedInput): number[] {
   let draft = input
   let lastTile = 0
   let signSlot = 0
-  const press = (sign: MakeOp) => {
+  const press = (sign: MakeBinaryOp) => {
     taps.push(idx.op(s, s.ops.indexOf(sign)))
-    draft = putFixedOperator(draft, sign)
+    draft = putFixedSign(draft, sign)
   }
   for (const token of s.witness) {
     if (token.kind === 'num') lastTile = token.tile
@@ -1090,14 +1112,21 @@ function fixedSolution(s: MakeNumberState, input: FixedInput): number[] {
     }
   }
   for (const [tile, hasSquare] of draft.squares.entries()) {
-    if (hasSquare === squared.has(tile)) continue
-    if (draft.squareTile !== tile) {
-      taps.push(tile)
-      draft = { ...draft, squareTile: tile }
-    }
-    press('²')
+    if (hasSquare !== squared.has(tile)) taps.push(idx.square(s, tile))
   }
   return [...taps, idx.submit(s)]
+}
+
+function withSquareSelection(s: MakeNumberState, taps: readonly number[]): number[] {
+  const steps: number[] = []
+  let picking = s.squarePicking
+  for (const tap of taps) {
+    const square = tap >= idx.square(s, 0) && tap < idx.slot(s, 0)
+    if (picking !== square) steps.push(idx.squareToggle(s))
+    steps.push(tap)
+    picking = false
+  }
+  return steps
 }
 
 const signature = (order: 'fixed' | 'any', tiles: readonly number[], target: number) =>
@@ -1108,7 +1137,7 @@ export const makeNumber: BrainGameDef<MakeNumberState> = {
   create(level, rng, ctx) {
     const p = makeNumberPlan(level, ctx)
     const puzzle = makePuzzle(p, rng)
-    const ops: MakeOp[] = ['+', '−', ...(p.times ? (['×'] as const) : []), ...(p.divide ? (['÷'] as const) : []), ...(p.square ? (['²'] as const) : []), ...(p.brackets ? (['(', ')'] as const) : [])]
+    const ops: MakeKeypadOp[] = ['+', '−', ...(p.times ? (['×'] as const) : []), ...(p.divide ? (['÷'] as const) : []), ...(p.brackets ? (['(', ')'] as const) : [])]
     const tags: string[] = []
     if (puzzle.tiles.length >= 4) tags.push('makeNumber.tiles4')
     if (p.times) tags.push('makeNumber.multiply')
@@ -1122,6 +1151,8 @@ export const makeNumber: BrainGameDef<MakeNumberState> = {
       tiles: puzzle.tiles,
       target: puzzle.target,
       ops,
+      canSquare: p.square,
+      squarePicking: false,
       witness: puzzle.witness,
       input: startInput(p.order, puzzle.tiles.length),
       undoStack: [],
@@ -1146,31 +1177,32 @@ export const makeNumber: BrainGameDef<MakeNumberState> = {
     if (over(s) || !Number.isInteger(i)) return s
     const { input, undoStack } = s
     const select = (next: MakeNumberInput) => next === input ? s : { ...s, input: next }
-    const edit = (next: MakeNumberInput) => next === input ? s : { ...s, input: next, undoStack: [...undoStack, input], lastValue: null }
+    const edit = (next: MakeNumberInput) => next === input ? s : { ...s, input: next, undoStack: [...undoStack, input], lastValue: null, squarePicking: false }
     if (i === idx.submit(s)) {
-      if (!complete(s)) return s
+      if (s.squarePicking || !complete(s)) return s
       const v = evaluate(input.order === 'fixed' ? fixedTokens(s.tiles, input) : input.tokens)
       if (v && v.d === 1 && v.n === s.target) return { ...s, solved: true }
       return { ...s, triesLeft: s.triesLeft - 1, wrong: s.wrong + 1, lastValue: v ? formatFrac(v) : '?' }
     }
     if (i === idx.undo(s)) {
       const previous = undoStack.at(-1)
-      return previous ? { ...s, input: previous, undoStack: undoStack.slice(0, -1), lastValue: null } : s
+      return previous ? { ...s, input: previous, undoStack: undoStack.slice(0, -1), lastValue: null, squarePicking: false } : s
     }
     if (i === idx.clear(s)) {
-      return undoStack.length ? { ...s, input: startInput(input.order, s.tiles.length), undoStack: [], lastValue: null } : s
+      return undoStack.length ? { ...s, input: startInput(input.order, s.tiles.length), undoStack: [], lastValue: null, squarePicking: false } : s
+    }
+    if (i === idx.squareToggle(s)) return canPickSquare(s) ? { ...s, squarePicking: !s.squarePicking } : s
+    if (s.squarePicking) {
+      return i >= idx.square(s, 0) && i < idx.slot(s, 0) ? edit(toggleSquare(input, i - idx.square(s, 0))) : s
     }
     if (i >= idx.slot(s, 0)) return select(selectSign(input, i - idx.slot(s, 0)))
     if (i >= 0 && i < s.tiles.length) {
-      if (input.order === 'fixed') {
-        return s.ops.includes('²') && input.squareTile !== i ? select({ ...input, squareTile: i }) : s
-      }
-      if (!expectsOperand(input.tokens) || usedTiles(input.tokens).has(i)) return s
+      if (input.order === 'fixed' || !expectsOperand(input.tokens) || usedTiles(input.tokens).has(i)) return s
       return edit({ ...input, tokens: [...input.tokens, num(s.tiles[i], i)], signSlot: null })
     }
     const o = s.ops[i - idx.op(s, 0)]
     if (!o || !opEnabled(s, o)) return s
-    if (input.order === 'fixed') return edit(putFixedOperator(input, o))
+    if (input.order === 'fixed') return edit(putFixedSign(input, o))
     if (isBinary(o) && input.signSlot !== null) {
       const token = input.tokens[input.signSlot]
       if (token.kind === 'op' && token.op === o) return select({ ...input, signSlot: null })
@@ -1194,29 +1226,30 @@ export const makeNumber: BrainGameDef<MakeNumberState> = {
     const ready = complete(s)
     const selectedToken = !fixed && input.signSlot !== null ? input.tokens[input.signSlot] : null
     const chosen = fixed ? input.signs[input.signSlot] : selectedToken?.kind === 'op' ? selectedToken.op : undefined
-    const promptKey = fixed ? (input.signs.length > 1 ? 'play.makeNumberSlots' : 'play.makeNumberSigns') : 'play.makeNumberTarget'
+    const defaultPrompt = fixed ? (input.signs.length > 1 ? 'play.makeNumberSlots' : 'play.makeNumberSigns') : 'play.makeNumberTarget'
     const view: MakeNumberView = {
       kind: 'makeNumber',
-      prompt: { key: promptKey, params: { target: s.target } },
+      prompt: { key: s.squarePicking && !done ? 'play.makeSquareHint' : defaultPrompt, params: { target: s.target } },
       target: s.target,
       order: input.order,
-      tiles: s.tiles.map((value, i) => ({ value, index: i, used: used.has(i), disabled: fixed || done || used.has(i) || !want })),
+      square: s.canSquare ? { index: idx.squareToggle(s), selected: s.squarePicking && !done, disabled: done || !canPickSquare(s) } : undefined,
+      tiles: s.tiles.map((value, i) => ({ value, index: i, used: used.has(i), disabled: fixed || done || s.squarePicking || used.has(i) || !want })),
       ops: s.ops.map((o, i) => ({
         op: o,
         index: idx.op(s, i),
-        disabled: done || !opEnabled(s, o),
-        selected: fixed && o === '²' ? input.squares[input.squareTile] : isBinary(o) && (fixed || chosen !== undefined) ? chosen === o : undefined,
+        disabled: done || s.squarePicking || !opEnabled(s, o),
+        selected: isBinary(o) && (fixed || chosen !== undefined) ? !s.squarePicking && chosen === o : undefined,
       })),
       undo: { index: idx.undo(s), disabled: done || s.undoStack.length === 0 },
       clear: { index: idx.clear(s), disabled: done || s.undoStack.length === 0 },
-      submit: { index: idx.submit(s), disabled: done || !ready },
+      submit: { index: idx.submit(s), disabled: done || s.squarePicking || !ready },
       equation: equationParts(s, ready, done),
       tries: { left: Math.max(0, s.triesLeft), total: s.tries },
       locked: done,
     }
     if (s.lastValue !== null) view.lastValue = s.lastValue
     if (done && !s.solved) {
-      const line = s.witness.map((t) => (t.kind === 'num' ? String(t.value) : t.op)).join(' ')
+      const line = s.witness.map((t) => (t.kind === 'num' ? String(t.value) : t.op)).join(' ').replaceAll(' ²', '²')
       view.reveal = { lines: [`${line} = ${s.target}`] }
     }
     return view
@@ -1224,14 +1257,20 @@ export const makeNumber: BrainGameDef<MakeNumberState> = {
   signature: (s) => signature(s.input.order, s.tiles, s.target),
   solution(s) {
     if (over(s)) return null
-    if (s.input.order === 'fixed') return fixedSolution(s, s.input)
+    if (s.input.order === 'fixed') return withSquareSelection(s, fixedSolution(s, s.input))
     const { tokens, signSlot } = s.input
-    const tokenIndex = (t: MakeToken) => (t.kind === 'num' ? t.tile : idx.op(s, s.ops.indexOf(t.op)))
     const same = (a: MakeToken, b: MakeToken) => (a.kind === 'num' ? b.kind === 'num' && a.tile === b.tile : b.kind === 'op' && a.op === b.op)
     const prefix = tokens.length <= s.witness.length && tokens.every((t, i) => same(t, s.witness[i]))
     const reset = !prefix ? [idx.clear(s)] : signSlot !== null ? [idx.slot(s, signSlot)] : []
-    const rest = s.witness.slice(prefix ? tokens.length : 0).map(tokenIndex)
-    return [...reset, ...rest, idx.submit(s)]
+    let lastTile = 0
+    const rest = s.witness.map((token) => {
+      if (token.kind === 'num') {
+        lastTile = token.tile
+        return token.tile
+      }
+      return token.op === '²' ? idx.square(s, lastTile) : idx.op(s, s.ops.indexOf(token.op))
+    }).slice(prefix ? tokens.length : 0)
+    return withSquareSelection(s, [...reset, ...rest, idx.submit(s)])
   },
   mechanics: (s) => s.tags,
   maxLevel: () => MAKE_NUMBER_MAX_LEVEL,
