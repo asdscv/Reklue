@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { dayNumber, emptyHistory, emptyMeta, emptyProgress, hasBit, setBit, mechanicInfo, parseMeta, parseProgress, brainGame, DEFAULT_CONTEXT, MECHANICS, type BrainMeta, type BrainProgress, type CreateContext, type RoundView } from '@reklue/shared/lib/brain-games'
+import { createRng, dayNumber, emptyHistory, emptyMeta, emptyProgress, hasBit, setBit, mechanicInfo, parseMeta, parseProgress, planTodaysSession, brainGame, DEFAULT_CONTEXT, MECHANICS, type BrainMeta, type BrainProgress, type CreateContext, type RoundView } from '@reklue/shared/lib/brain-games'
 import { useBrainRound, type PlatformContext, type RoundStats } from '@reklue/shared/hooks/useBrainRound'
 import { useTodaysTraining } from '@reklue/shared/hooks/useTodaysTraining'
 import { useBrainStore } from '@reklue/shared/stores/brain-store'
@@ -335,7 +335,8 @@ describe('time budget (Today\'s Training slots)', () => {
 
   it("Today's Training keeps a round's setup time out of the slot", () => {
     seed()
-    const { result } = renderHook(() => useTodaysTraining())
+    const slots = planTodaysSession(useBrainStore.getState().progress, createRng(0))
+    const { result } = renderHook(() => useTodaysTraining(slots))
     const slot = result.current.slot!
     const full = slot.minutes * 60_000
     expect(result.current.slotBudgetMs).toBe(full)

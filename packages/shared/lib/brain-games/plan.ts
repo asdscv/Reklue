@@ -34,6 +34,11 @@ export interface PlanSlot {
 /** The day's emphasis — a light theme so sessions do not all feel alike. */
 export type SessionFocus = 'mixed' | 'speed' | 'memory' | 'thinking'
 
+export interface TrainingPlan {
+  focus: SessionFocus
+  slots: PlanSlot[]
+}
+
 /** Per session length: how many games, the shortest slot, and slot sizes in half-minute steps. */
 const LENGTHS = {
   5: { counts: [2, 3, 3, 4], minSlot: 1, slowMin: 1.5 },
@@ -89,7 +94,7 @@ function splitMinutes(games: readonly BrainGameId[], total: number, minSlot: num
  *   (Number Hunt, Match Pairs, Code Break, Make the Number, Maze Run) get a slot big enough for a
  *   few boards.
  */
-export function planToday(p: BrainProgress, rng: Rng): { focus: SessionFocus; slots: PlanSlot[] } {
+export function planToday(p: BrainProgress, rng: Rng, previousSlots: readonly PlanSlot[] = []): TrainingPlan {
   const total: 5 | 20 = p.settings.sessionMinutes === 20 ? 20 : 5
   const shape = LENGTHS[total]
   const focus = rng.pick(FOCI)
@@ -103,9 +108,12 @@ export function planToday(p: BrainProgress, rng: Rng): { focus: SessionFocus; sl
   }
   const picked: BrainGameId[] = []
   const pool = rng.shuffle(BRAIN_GAMES.map((g) => g.id))
+  const alternatives = pool.filter((id) => !previousSlots.some((slot) => slot.gameId === id))
   while (picked.length < count) {
     const usedSkills = new Set(picked.map(skillOf))
-    const scored = pool
+    // Keep a new game in a shuffled plan, even if the short session trims the last picks.
+    const candidates = picked.length === 0 && alternatives.length > 0 ? alternatives : pool
+    const scored = candidates
       .filter((id) => !picked.includes(id))
       .map((id) => ({
         id,

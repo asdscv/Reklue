@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { type AchievementId, type BrainGameId, type BrainMeta, type PlanSlot, achievementBit, createRng, dayDiff, earnedBySession, emptyMeta, localDayKey, planTodaysSession, plannedMinutes, setBit, todaysPlanSeed } from '../lib/brain-games'
+import { type AchievementId, type BrainGameId, type BrainMeta, type PlanSlot, achievementBit, dayDiff, earnedBySession, emptyMeta, localDayKey, plannedMinutes, setBit } from '../lib/brain-games'
 import { useBrainStore } from '../stores/brain-store'
 import type { RoundStats } from './useBrainRound'
 
 /**
- * Today's Training: a bounded session of four games, run one after another.
+ * Today's Training: a bounded session of games, run one after another.
  *
  * Each game has a time slot. When a round ends (lives or its cap) and more than a minute of the
  * slot is left, another round of the same game starts; otherwise the session moves on, with a
@@ -37,27 +37,23 @@ interface TrainingState {
   totals: TrainingTotals
 }
 
-function init(): TrainingState {
-  const now = Date.now()
+function init(slots: PlanSlot[]): TrainingState {
   return {
-    slots: (() => {
-      const progress = useBrainStore.getState().progress
-      return planTodaysSession(progress, createRng(todaysPlanSeed(progress, localDayKey())))
-    })(),
+    slots,
     slotIndex: 0,
     slotActiveMs: 0,
     activeMs: 0,
     roundsInSlot: 0,
     roundKey: 1,
     phase: 'playing',
-    startedAt: now,
+    startedAt: Date.now(),
     finishedAt: null,
     totals: { rounds: 0, trials: 0, correct: 0, points: 0, levels: {} },
   }
 }
 
-export function useTodaysTraining() {
-  const [state, setState] = useState(init)
+export function useTodaysTraining(slots: PlanSlot[]) {
+  const [state, setState] = useState(() => init(slots))
   const [achievements, setAchievements] = useState<AchievementId[]>([])
 
   const onRoundOver = useCallback((gameId: BrainGameId, stats: RoundStats) => {
@@ -134,7 +130,6 @@ export function useTodaysTraining() {
     next,
     roundKey: state.roundKey,
     totals: state.totals,
-    plannedMinutes: plannedMinutes(state.slots),
     /** Play time left in this game's slot — the round in play gets it as its time budget. */
     slotBudgetMs: slot ? Math.max(15_000, slot.minutes * 60_000 - state.slotActiveMs) : undefined,
     startedAt: state.startedAt,

@@ -7,6 +7,8 @@ import {
   type BrainSaveDocs,
   type BrainSettings,
   type RemoteBrainSave,
+  type TrainingPlan,
+  createRng,
   emptyHistory,
   emptyMeta,
   emptyProgress,
@@ -19,6 +21,8 @@ import {
   parseMeta,
   parseProgress,
   pinGame,
+  planToday,
+  randomSeed,
   reconcile,
   recordHistory,
   recordRound,
@@ -29,6 +33,7 @@ import {
   serializeMeta,
   serializeProgress,
   setStartLevel,
+  todaysPlanSeed,
   updateSettings,
 } from '../lib/brain-games'
 import { supabaseBrainCloud, type BrainCloud, type CloudFailure } from './brain-cloud'
@@ -59,10 +64,23 @@ export interface BrainStorage {
 /** What a records screen may show as a quiet note. Never a blocking dialog, never an error screen. */
 export type BrainCloudStatus = 'off' | 'loading' | 'synced' | 'pending' | 'offline' | 'unavailable' | 'outdated'
 
+interface TrainingDraft {
+  seed: number
+  minutes: BrainSettings['sessionMinutes']
+  plan: TrainingPlan
+}
+
+export function resolveTrainingPlan(progress: BrainProgress, draft: TrainingDraft | null, seed: number): TrainingPlan {
+  if (draft?.seed === seed && draft.minutes === progress.settings.sessionMinutes) return draft.plan
+  return planToday(progress, createRng(seed))
+}
+
 interface BrainStore {
   progress: BrainProgress
   history: BrainHistory
   meta: BrainMeta
+  /** In-memory line-up shared by the home card and the training start screen. */
+  trainingDraft: TrainingDraft | null
   storageKey: string | null
   /**
    * The cloud's first answer for this account is in and merged (whatever it was — a copy, no copy,
@@ -89,6 +107,7 @@ interface BrainStore {
   ): { isNewBest: boolean; best: number }
   practiced(id: BrainGameId): void
   setSettings(patch: Partial<BrainSettings>): void
+  shuffleTraining(): void
   /** A completed Today's Training session, with the games it used (for the rotation). */
   completeSession(minutes: number, games?: BrainGameId[]): void
   /** Change the game meta (skill estimates, tiers, seen rules …): kept on the device and synced. */
@@ -444,6 +463,7 @@ export const useBrainStore = create<BrainStore>((set, get) => {
     progress: emptyProgress(),
     history: emptyHistory(),
     meta: emptyMeta(),
+    trainingDraft: null,
     storageKey: null,
     cloudReady: false,
     cloudStatus: 'off',
@@ -470,6 +490,7 @@ export const useBrainStore = create<BrainStore>((set, get) => {
         progress: parseProgress(raw),
         history: parseHistory(rawHistory),
         meta: parseMeta(rawMeta),
+        trainingDraft: null,
         storageKey: next.key,
         cloudReady: !cloud,
         cloudStatus: cloud ? 'loading' : 'off',
@@ -520,6 +541,13 @@ export const useBrainStore = create<BrainStore>((set, get) => {
     setSettings(patch) {
       commitProgress(updateSettings(get().progress, patch))
     },
+    shuffleTraining() {
+      const { progress, trainingDraft } = get()
+      const seed = todaysPlanSeed(progress, localDayKey())
+      const previous = resolveTrainingPlan(progress, trainingDraft, seed)
+      const plan = planToday(progress, createRng(randomSeed()), previous.slots)
+      set({ trainingDraft: { seed, minutes: progress.settings.sessionMinutes, plan } })
+    },
     completeSession(minutes, games = []) {
       const today = localDayKey()
       const p = get().progress
@@ -545,6 +573,7 @@ export const useBrainStore = create<BrainStore>((set, get) => {
         progress: emptyProgress(),
         history: emptyHistory(),
         meta: emptyMeta(),
+        trainingDraft: null,
         storageKey: null,
         cloudReady: false,
         cloudStatus: 'off',
