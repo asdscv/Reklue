@@ -7,7 +7,7 @@ import { buildDeckMetadata } from "@/domain/services/DeckMetadataBuilder";
 import type { OfficialDeck } from "@/domain/entities/OfficialDeck";
 import type { OfficialCard } from "@/domain/entities/OfficialCard";
 import type { RawCsv } from "@/application/ports/CsvSource";
-import { detectSchema } from "@/application/services/CsvSchemaDetector";
+import { detectSchema, type CsvSchema } from "@/application/services/CsvSchemaDetector";
 import { parseRow } from "@/application/services/CsvRowParser";
 import type { ImportPlan } from "@/application/dto/ImportPlan";
 import {
@@ -33,6 +33,7 @@ export interface BuildOptions {
  * Returns one plan per (source, target) pair available in the CSV.
  * For schema A/B: 7 plans (en → ko/ja/zh/es/vi/th/id).
  * For schema C : 1 plan (ko → en).
+ * For schema D : 7 plans (ja → en/ko/zh/es/vi/th/id).
  */
 export function buildPlansForCsv(
   csv: RawCsv,
@@ -52,7 +53,7 @@ export function buildPlansForCsv(
         csv,
         LanguagePair.of(source, target),
         detection.schema,
-        opts.skipMalformedRows ?? false,
+        detection.schema !== "D" && (opts.skipMalformedRows ?? false),
         warn,
       ),
     );
@@ -78,7 +79,7 @@ export function buildPlansForCsv(
 function buildSinglePlan(
   csv: RawCsv,
   pair: LanguagePair,
-  schema: "A" | "B" | "C",
+  schema: CsvSchema,
   skipMalformed: boolean,
   warn: (m: string) => void,
 ): ImportPlan {

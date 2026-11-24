@@ -4,8 +4,11 @@
 // that shows crawlers more than people would be cloaking. An official deck page is written in
 // the deck's own language (its meanings are in that language), not in the visitor's UI language.
 
-import { DECK_NATIVE_LANGUAGES } from './official-deck-family'
-import { vocabHubForDeck, vocabHubPath, vocabLanguageIndexPath, VOCAB_LANGUAGE_INDEX } from './vocab-hubs'
+import { DECK_NATIVE_LANGUAGES, teachesJapanese } from './official-deck-family'
+import {
+  LANGUAGE_NATIVE_NAME, VOCAB_INDEX_PATH, VOCAB_LANGUAGE_INDEX,
+  vocabHubForDeck, vocabHubPath, vocabLanguageIndexPath,
+} from './vocab-hubs'
 
 export interface ListingSeoInput {
   id: string
@@ -26,12 +29,14 @@ export interface WordRow {
   exampleNote: string
 }
 
-type Lang = (typeof DECK_NATIVE_LANGUAGES)[number]
+type IndexLang = (typeof DECK_NATIVE_LANGUAGES)[number]
+type Lang = IndexLang | 'en'
 
 const EXAMS = ['toeic', 'ielts', 'toefl'] as const
 type Exam = (typeof EXAMS)[number]
 
 const EXAM_NAME: Record<Lang, Record<Exam, string>> = {
+  en: { toeic: 'TOEIC', ielts: 'IELTS', toefl: 'TOEFL' },
   ko: { toeic: '토익', ielts: '아이엘츠', toefl: '토플' },
   ja: { toeic: 'TOEIC', ielts: 'IELTS', toefl: 'TOEFL' },
   zh: { toeic: '托业', ielts: '雅思', toefl: '托福' },
@@ -60,6 +65,14 @@ interface Copy {
 }
 
 const COPY: Record<Lang, Copy> = {
+  en: {
+    examTitle: (e, l, c) => `${e} ${l} vocabulary — ${c} words with meanings and examples`,
+    title: (t, c) => `${t}: ${c} words with readings and examples`,
+    description: (h, s) => `${h}. Preview ${s} words from the deck with meanings and examples, then study with spaced repetition for free.`,
+    intro: (c, s) => `Preview ${s} of the ${c} words with readings, meanings and examples. Study the full deck for free with spaced repetition.`,
+    columns: ['Word', 'Meaning', 'Example'],
+    cta: (r) => `Study the remaining ${r} words with spaced repetition`,
+  },
   ko: {
     examTitle: (e, l, c) => `${e} ${l} 단어 ${c}개 — 뜻·예문`,
     title: (t, c) => `${t}: 단어 ${c}개·뜻·예문`,
@@ -120,13 +133,15 @@ const COPY: Record<Lang, Copy> = {
   },
 }
 
-function isLang(value: string | null | undefined): value is Lang {
+function isIndexLang(value: string | null | undefined): value is IndexLang {
   return !!value && (DECK_NATIVE_LANGUAGES as readonly string[]).includes(value)
 }
 
 /** The language an official deck page is written in, or null for pages that keep the old layout. */
-export function wordListPageLanguage(listing: Pick<ListingSeoInput, 'owner_is_official' | 'native_language'>): Lang | null {
-  return listing.owner_is_official && isLang(listing.native_language) ? listing.native_language : null
+export function wordListPageLanguage(listing: Pick<ListingSeoInput, 'owner_is_official' | 'native_language' | 'tags'>): Lang | null {
+  if (!listing.owner_is_official) return null
+  if (listing.native_language === 'en' && teachesJapanese(listing.tags)) return 'en'
+  return isIndexLang(listing.native_language) ? listing.native_language : null
 }
 
 // 'always': Spanish would otherwise print 1500 — every count on the site carries a separator.
@@ -179,7 +194,32 @@ export function wordListColumns(lang: Lang, category?: string): [string, string,
 }
 
 export function wordListCta(listing: ListingSeoInput, lang: Lang): string {
+  if (teachesJapanese(listing.tags)) return FULL_DECK_CTA[lang](fmt(listing.card_count, lang))
   return COPY[lang].cta(fmt(Math.max(0, listing.card_count - listing.sample_fields.length), lang))
+}
+
+const FULL_DECK_CTA: Record<Lang, (count: string) => string> = {
+  en: (c) => `Study all ${c} cards for free`,
+  ko: (c) => `${c}장 모두 무료로 학습하기`,
+  ja: (c) => `全${c}枚を無料で学習する`,
+  zh: (c) => `免费学习全部 ${c} 张卡片`,
+  es: (c) => `Estudia las ${c} tarjetas gratis`,
+  vi: (c) => `Học miễn phí cả ${c} thẻ`,
+  th: (c) => `เรียนฟรีทั้ง ${c} การ์ด`,
+  id: (c) => `Pelajari semua ${c} kartu secara gratis`,
+}
+
+function siblingLinks(listing: ListingSeoInput) {
+  const japanese = teachesJapanese(listing.tags)
+  return (listing.siblings ?? []).flatMap(({ id, native_language: lang }) => {
+    if (lang === listing.native_language) return []
+    if (lang === 'en' && japanese) return [{ id, lang, label: 'English' }]
+    return isIndexLang(lang) ? [{ id, lang, label: LANGUAGE_NATIVE_NAME[lang] }] : []
+  })
+}
+
+export function wordListLanguageLinks(listing: ListingSeoInput) {
+  return teachesJapanese(listing.tags) ? siblingLinks(listing) : []
 }
 
 /**
@@ -187,10 +227,9 @@ export function wordListCta(listing: ListingSeoInput, lang: Lang): string {
  * «English → X» exam decks — the English hub as both `en` and `x-default`.
  */
 export function wordListHreflang(listing: ListingSeoInput, siteUrl: string): { lang: string; href: string }[] {
-  const self = isLang(listing.native_language) ? [{ lang: listing.native_language, href: `${siteUrl}/d/${listing.id}` }] : []
-  const others = (listing.siblings ?? [])
-    .filter((s) => isLang(s.native_language) && s.native_language !== listing.native_language)
-    .map((s) => ({ lang: s.native_language, href: `${siteUrl}/d/${s.id}` }))
+  const lang = wordListPageLanguage(listing)
+  const self = lang ? [{ lang, href: `${siteUrl}/d/${listing.id}` }] : []
+  const others = siblingLinks(listing).map((s) => ({ lang: s.lang, href: `${siteUrl}/d/${s.id}` }))
   const hub = vocabHubForDeck(listing.category, listing.tags)
   const english = hub
     ? [{ lang: 'en', href: `${siteUrl}${vocabHubPath(hub)}` }, { lang: 'x-default', href: `${siteUrl}${vocabHubPath(hub)}` }]
@@ -200,7 +239,12 @@ export function wordListHreflang(listing: ListingSeoInput, siteUrl: string): { l
 
 /** The link from a deck page back to every official word list in its language. */
 export function wordListIndexLink(lang: Lang): { path: string; label: string } {
+  if (lang === 'en') return { path: VOCAB_INDEX_PATH, label: 'All vocabulary lists' }
   return { path: vocabLanguageIndexPath(lang), label: VOCAB_LANGUAGE_INDEX[lang].backToIndex }
+}
+
+export function wordListTermLanguage(listing: Pick<ListingSeoInput, 'tags'>): 'en' | 'ja' {
+  return teachesJapanese(listing.tags) ? 'ja' : 'en'
 }
 
 // Some imported decks wrap whole example sentences in quotes ("Air quality tends to…").
@@ -210,11 +254,12 @@ function unquote(text: string): string {
 }
 
 /**
- * Cards as rows with English always in the term column: «English → X» decks keep English on the
- * front, «X → English» and conversation decks keep it on the back.
+ * Put the language being learned in the term column. Japanese vocabulary
+ * includes kana when the written term differs from its reading.
  */
 export function wordRows(listing: Pick<ListingSeoInput, 'tags' | 'sample_fields'>): WordRow[] {
-  const englishOnBack = listing.tags.includes('target:en') && !listing.tags.includes('source:en')
+  const japanese = teachesJapanese(listing.tags)
+  const englishOnBack = !japanese && listing.tags.includes('target:en') && !listing.tags.includes('source:en')
   return listing.sample_fields.map(({ field_values: f }) => {
     const v = (k: string) => (typeof f?.[k] === 'string' ? unquote(f[k].trim()) : '')
     if (v('kind') === 'phrase' || (!v('example_front') && (v('situation') || v('alt')))) {
@@ -225,8 +270,11 @@ export function wordRows(listing: Pick<ListingSeoInput, 'tags' | 'sample_fields'
         exampleNote: v('situation'),
       }
     }
+    const front = v('front')
+    const reading = japanese ? v('reading') : ''
+    const term = front && reading && reading !== front ? `${front}（${reading}）` : front
     return englishOnBack
       ? { term: v('back'), meaning: v('front'), example: v('example_back'), exampleNote: v('example_front') }
-      : { term: v('front'), meaning: v('back'), example: v('example_front'), exampleNote: v('example_back') }
+      : { term, meaning: v('back'), example: v('example_front'), exampleNote: v('example_back') }
   }).filter((r) => r.term && r.meaning)
 }

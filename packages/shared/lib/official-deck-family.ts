@@ -24,6 +24,10 @@ export const DECK_LEVELS: Readonly<Record<DeckCategory, readonly string[]>> = {
 /** Native languages the official decks are published in (English is the language being learned). */
 export const DECK_NATIVE_LANGUAGES = ['ko', 'ja', 'zh', 'vi', 'th', 'id', 'es'] as const
 
+export function teachesJapanese(tags: readonly string[] | null): boolean {
+  return tags?.includes('source:ja') === true && tags.includes('learning_language:ja')
+}
+
 export function formatDeckFamily(f: DeckFamily): string {
   return `${f.category}:${f.level}`
 }

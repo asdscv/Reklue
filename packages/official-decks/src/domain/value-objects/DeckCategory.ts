@@ -11,6 +11,8 @@ export const DECK_CATEGORIES = [
 
 export type DeckCategory = (typeof DECK_CATEGORIES)[number];
 
+export const JLPT_N5_VERBS_FILE = "jlpt-n5-everyday-verbs.csv";
+
 const CATEGORY_SET: ReadonlySet<string> = new Set(DECK_CATEGORIES);
 
 export function isDeckCategory(value: unknown): value is DeckCategory {
@@ -19,7 +21,7 @@ export function isDeckCategory(value: unknown): value is DeckCategory {
 
 export function inferCategoryFromFilename(filename: string): DeckCategory {
   const lower = filename.toLowerCase();
-  if (lower.startsWith("beginner_batch") || lower.startsWith("english-beginner")) {
+  if (lower.startsWith("beginner_batch") || lower.startsWith("english-beginner") || lower === JLPT_N5_VERBS_FILE) {
     return "beginner";
   }
   if (lower.startsWith("intermediate_batch")) return "intermediate";
@@ -42,6 +44,7 @@ export function inferCategoryFromFilename(filename: string): DeckCategory {
  *   real-conversation-시사.csv → "시사"
  */
 export function inferLevelFromFilename(filename: string): string | null {
+  if (filename.toLowerCase() === JLPT_N5_VERBS_FILE) return "jlpt-n5-verbs";
   const stem = filename.replace(/\.csv$/i, "");
   const lower = stem.toLowerCase();
 

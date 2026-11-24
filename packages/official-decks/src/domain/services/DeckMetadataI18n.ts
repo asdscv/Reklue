@@ -258,3 +258,45 @@ export function localizedDeckDescription(
       return s.descVocab;
   }
 }
+
+const JLPT_N5_VERBS: Record<LanguageCode, { readonly name: string; readonly description: string }> = {
+  en: {
+    name: "JLPT N5 Basic Japanese Verbs",
+    description: "Practice 60 everyday Japanese verbs for JLPT N5. Each card has a kana reading, an English meaning and examples in both languages.",
+  },
+  ko: {
+    name: "JLPT N5 일본어 기초 동사",
+    description: "JLPT N5 입문에 필요한 일상 동사 60개를 연습해요. 카드마다 히라가나 읽기, 한국어 뜻, 일본어 예문과 한국어 번역이 있어요.",
+  },
+  ja: {
+    name: "JLPT N5 基本動詞",
+    description: "JLPT N5の学習に役立つ身近な動詞60語を、読み方・意味・例文とともに練習します。",
+  },
+  zh: {
+    name: "JLPT N5 日语基础动词",
+    description: "用60个日常动词练习JLPT N5日语。每张卡都附有假名读音、中文释义、日语例句及中文译文。",
+  },
+  es: {
+    name: "Verbos básicos de japonés para el JLPT N5",
+    description: "Practica 60 verbos japoneses de uso cotidiano para el JLPT N5. Cada tarjeta incluye la lectura en kana, el significado en español y ejemplos en ambos idiomas.",
+  },
+  vi: {
+    name: "Động từ tiếng Nhật cơ bản JLPT N5",
+    description: "Luyện 60 động từ tiếng Nhật thông dụng cho JLPT N5. Mỗi thẻ có cách đọc bằng kana, nghĩa tiếng Việt và câu ví dụ song ngữ.",
+  },
+  th: {
+    name: "คำกริยาญี่ปุ่นพื้นฐาน JLPT N5",
+    description: "ฝึกคำกริยาภาษาญี่ปุ่นในชีวิตประจำวัน 60 คำสำหรับ JLPT N5 แต่ละการ์ดมีคำอ่านฮิรางานะ ความหมายภาษาไทย และประโยคตัวอย่างสองภาษา",
+  },
+  id: {
+    name: "Kata kerja dasar bahasa Jepang JLPT N5",
+    description: "Latih 60 kata kerja sehari-hari untuk JLPT N5. Setiap kartu memuat bacaan kana, arti dalam bahasa Indonesia, dan contoh kalimat dalam kedua bahasa.",
+  },
+};
+
+export function localizedJlptN5Verbs(audience: LanguageCode): { readonly name: string; readonly description: string } {
+  const copy = JLPT_N5_VERBS[audience];
+  const names = LANGUAGE_NAMES[audience];
+  const direction = fill(STRINGS[audience].direction, { src: names.ja, tgt: names[audience] });
+  return { name: copy.name + direction, description: copy.description };
+}

@@ -5,7 +5,7 @@ import {
 import type { LanguageCode } from "@/domain/value-objects/LanguageCode";
 import type { CardFieldValues } from "@/domain/value-objects/CardFieldValues";
 import type { RawCsvRow } from "@/application/ports/CsvSource";
-import type { CsvSchema } from "@/application/services/CsvSchemaDetector";
+import { JAPANESE_WORD_HEADER, JAPANESE_WORD_TARGETS, type CsvSchema } from "@/application/services/CsvSchemaDetector";
 
 /**
  * Column index of (word, example) in schemas A and B for a given target lang.
@@ -102,6 +102,32 @@ export function parsePhraseCardFromC(
   return { kind: "phrase", front, back, alt, situation, note };
 }
 
+function parseJapaneseWord(
+  row: RawCsvRow,
+  filename: string,
+  rowIndex: number,
+  target: LanguageCode,
+): CardFieldValues {
+  const targetIndex = JAPANESE_WORD_TARGETS.indexOf(target);
+  if (row.cells.length !== JAPANESE_WORD_HEADER.length || targetIndex < 0) {
+    throw new MalformedCsvRowError(filename, rowIndex, "invalid Japanese word row or translation language");
+  }
+  const cell = (index: number): string => {
+    const value = row.cells[index]?.trim() ?? "";
+    if (!value) throw new MissingRequiredFieldError(filename, rowIndex, JAPANESE_WORD_HEADER[index]!);
+    return value;
+  };
+  const translation = 3 + targetIndex * 2;
+  return {
+    kind: "word",
+    front: cell(0),
+    reading: cell(1),
+    example_front: cell(2),
+    back: cell(translation),
+    example_back: cell(translation + 1),
+  };
+}
+
 export function parseRow(
   schema: CsvSchema,
   row: RawCsvRow,
@@ -116,5 +142,7 @@ export function parseRow(
       return parseWordCardFromAB(row, filename, rowIndex, source, target);
     case "C":
       return parsePhraseCardFromC(row, filename, rowIndex);
+    case "D":
+      return parseJapaneseWord(row, filename, rowIndex, target);
   }
 }
