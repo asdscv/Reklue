@@ -1,4 +1,4 @@
-import type { BrainGameId } from './types'
+import { BRAIN_SAVE_FORMAT, type BrainGameId } from './types'
 import { isSavedGameId } from './catalog'
 import { SPAN_LEVEL_CAP, V2_REPLACED, migrateLevelV1 } from './scale'
 
@@ -22,11 +22,11 @@ export interface SkillEstimate {
 
 export interface BrainMeta {
   /**
-   * 3 since the thinking games (2026-11-13; sync.ts BRAIN_META_FORMAT says why); 2 since the
+   * 4 adds Playing Card Recall. 3 introduced the thinking games (2026-11-13; sync.ts BRAIN_META_FORMAT says why); 2 since the
    * hard-content change (estimates on the v2 level scale). v1 is converted once on reading; v2 is
    * read as it is.
    */
-  v: 3
+  v: typeof BRAIN_SAVE_FORMAT
   /** Per game skill estimate. */
   sk: Partial<Record<BrainGameId, SkillEstimate>>
   /** Per game best tier reached, 0 (none) to 6 (master). Sticky: never lowered. */
@@ -48,7 +48,7 @@ export interface BrainMeta {
 }
 
 export function emptyMeta(): BrainMeta {
-  return { v: 3, sk: {}, tier: {}, seen: '', ach: '', practice: {}, wipes: {}, rt: {}, span2: {}, span1: {} }
+  return { v: BRAIN_SAVE_FORMAT, sk: {}, tier: {}, seen: '', ach: '', practice: {}, wipes: {}, rt: {}, span2: {}, span1: {} }
 }
 
 // ── hex bitmasks ────────────────────────────────────────────────────────────
@@ -105,7 +105,7 @@ const intIn = (lo: number, hi: number) => (v: unknown) => (isNum(v) ? Math.max(l
 /**
  * Anything unreadable becomes an empty record rather than a crash; values are clamped to sane ranges.
  *
- * Reads v1, v2 or v3 and always returns v3 (v2 is the same content). On v1 the board games whose content was rebuilt get their
+ * Reads v1 through v4 and returns the current format (v2 is the same content). On v1 the board games whose content was rebuilt get their
  * estimate moved to the v2 scale and re-opened (sd 9, n 0 — the next round places or probes once);
  * the span games keep theirs, clamped to the new cap. Tiers are sticky and stay as they are.
  */
@@ -113,7 +113,7 @@ export function parseMeta(raw: string | null | undefined): BrainMeta {
   if (!raw) return emptyMeta()
   try {
     const d = JSON.parse(raw) as Partial<Omit<BrainMeta, 'v'>> & { v?: unknown }
-    if (!d || (d.v !== 1 && d.v !== 2 && d.v !== 3)) return emptyMeta()
+    if (!d || (d.v !== 1 && d.v !== 2 && d.v !== 3 && d.v !== BRAIN_SAVE_FORMAT)) return emptyMeta()
     const oldScale = d.v === 1
     const spanCap = (id: BrainGameId, v: number) => (oldScale && (id === 'memoryGrid' || id === 'sequence') ? Math.min(SPAN_LEVEL_CAP, v) : v)
     const sk = perGame(d.sk, (v) => {
@@ -136,7 +136,7 @@ export function parseMeta(raw: string | null | undefined): BrainMeta {
       for (const map of [span1, span2]) for (const [id, v] of Object.entries(map) as [BrainGameId, number][]) map[id] = spanCap(id, v)
     }
     return {
-      v: 3,
+      v: BRAIN_SAVE_FORMAT,
       sk,
       tier: perGame(d.tier, intIn(0, 6)),
       seen: isHex(d.seen) ? d.seen : '',

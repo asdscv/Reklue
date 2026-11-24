@@ -6,10 +6,11 @@ import { makeNumber } from '@reklue/shared/lib/brain-games/games/make-number'
 import { mazeDragCells } from '@reklue/shared/lib/brain-games/maze-drag'
 import { BrainBoard } from '../BrainBoard'
 
-for (const [id, level] of [['setMatch', 1], ['codeBreak', 1], ['makeNumber', 1], ['makeNumber', 7], ['makeNumber', 14], ['mazeRun', 1]] as const) {
+for (const [id, level] of [['setMatch', 1], ['codeBreak', 1], ['makeNumber', 1], ['makeNumber', 7], ['makeNumber', 14], ['mazeRun', 1], ['cardRecall', 14]] as const) {
   it(`${id} L${level}: the real board's buttons finish a generated puzzle`, () => {
     const def = brainGame(id).def
     let state = def.create(level, createRng(6), DEFAULT_CONTEXT)
+    if (def.pendingMs(state) !== null) state = def.advance(state)
     function Player() {
       const [s, setS] = useState(state)
       useEffect(() => { state = s }, [s])
@@ -76,6 +77,42 @@ it('selects an earlier on-screen slot and changes just that operator', () => {
   expect(first).toHaveTextContent('−')
   expect(second).toHaveTextContent('×')
   expect(screen.queryByRole('status')).toBeNull()
+})
+
+it('asks which number to square after the Square button is pressed', () => {
+  function Player() {
+    const [state, setState] = useState(() => makeNumber.create(7, createRng(588), DEFAULT_CONTEXT))
+    return <BrainBoard view={makeNumber.view(state)} onTap={(index) => setState((old) => makeNumber.tap(old, index))} width={320} theme={GAME_THEMES.makeNumber} />
+  }
+  render(<Player />)
+  const equation = screen.getByTestId('brain-make-equation')
+  const expression = equation.querySelector('[aria-live="polite"]')
+  const [six, eight] = within(equation).getAllByRole('button', { name: 'play.makeSquare' })
+  const confirm = screen.getByRole('button', { name: 'play.submit' })
+  const square = screen.getByRole('button', { name: 'play.makeSquareButton' })
+
+  expect(expression).toHaveTextContent('6 □ 8 = 70')
+  expect(six).toBeDisabled()
+  expect(eight).toBeDisabled()
+  fireEvent.click(square)
+  expect(square).toHaveAttribute('aria-pressed', 'true')
+  expect(eight).toBeEnabled()
+  fireEvent.click(eight)
+  expect(expression).toHaveTextContent('6 □ 8² = 70')
+  expect(eight).toHaveAttribute('aria-pressed', 'true')
+  expect(eight).toBeDisabled()
+  expect(confirm).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: '+' }))
+  expect(expression).toHaveTextContent('6 + 8² = 70')
+  expect(screen.queryByRole('status')).toBeNull()
+  fireEvent.click(square)
+  fireEvent.click(eight)
+  expect(expression).toHaveTextContent('6 + 8 = 70')
+  fireEvent.click(screen.getByRole('button', { name: 'play.undo' }))
+  expect(expression).toHaveTextContent('6 + 8² = 70')
+  fireEvent.click(confirm)
+  expect(confirm).toBeDisabled()
+  expect(eight).toBeDisabled()
 })
 
 describe('maze drag', () => {

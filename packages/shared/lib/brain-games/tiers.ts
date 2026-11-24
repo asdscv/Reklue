@@ -43,6 +43,7 @@ export const TIERS: Record<BrainGameId, readonly [number, number, number, number
   makeNumber: [4, 7, 9, 13, 15, 17],
   // 6×6 · winding · keys · hidden walls · hidden walls and keys · two keys in a hidden 5×6
   mazeRun: [3, 6, 11, 16, 21, 23],
+  cardRecall: [3, 5, 6, 9, 11, 14],
 }
 
 /** The tier (0 = none yet, 1-6) a value reaches in a game. */

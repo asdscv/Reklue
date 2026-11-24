@@ -1,4 +1,4 @@
-import type { BrainGameId } from './types'
+import { BRAIN_SAVE_FORMAT, type BrainGameId } from './types'
 import { GROUP_RULES, TIMING_MODES, type TimingMode } from './rules'
 import { V2_RESCALED, migrateLevelV1 } from './scale'
 
@@ -62,11 +62,11 @@ export interface BrainSettings {
 
 export interface BrainProgress {
   /**
-   * 3 since the thinking games (2026-11-13; sync.ts BRAIN_PROGRESS_FORMAT says why); 2 since the
+   * 4 adds Playing Card Recall. 3 introduced the thinking games (2026-11-13; sync.ts BRAIN_PROGRESS_FORMAT says why); 2 since the
    * hard-content change (levels on the v2 scale). A v1 record is converted once on reading; a v2
    * record is read as it is — v2 → v3 changes nothing in the content.
    */
-  v: 3
+  v: typeof BRAIN_SAVE_FORMAT
   games: Partial<Record<BrainGameId, GameProgress>>
   totalRounds: number
   totalPoints: number
@@ -103,7 +103,7 @@ const emptySessions = (): SessionLog => ({ recentDays: [], total: 0, course: 0, 
 
 export function emptyProgress(): BrainProgress {
   return {
-    v: 3,
+    v: BRAIN_SAVE_FORMAT,
     games: {},
     totalRounds: 0,
     totalPoints: 0,
@@ -234,7 +234,12 @@ export function recordSession(p: BrainProgress, minutes: number, today: string, 
 }
 
 export function serializeProgress(p: BrainProgress): string {
-  return JSON.stringify(p)
+  // The local cache has a small value limit. All readers already default bestLevel to level.
+  const games = Object.fromEntries(Object.entries(p.games).map(([id, game]) => [
+    id,
+    game && game.bestLevel === game.level ? { ...game, bestLevel: undefined } : game,
+  ]))
+  return JSON.stringify({ ...p, games })
 }
 
 const num = (v: unknown, min = 0): number => (typeof v === 'number' && Number.isFinite(v) ? Math.max(min, v) : min)
@@ -249,7 +254,7 @@ const isDay = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2
 /**
  * Tolerant: anything unreadable becomes an empty record rather than a crash on launch.
  *
- * Reads v1, v2 or v3 and always returns v3. A v1 record's board-game levels are converted to the v2
+ * Reads v1 through v4 and returns the current format. A v1 record's board-game levels are converted to the v2
  * scale (scale.ts) and their best scores cleared — earned on easier content, the precedent Quick
  * Eye's field change set. Converting happens only on a v1 document, so reading the result again
  * changes nothing. A v2 record is the same content under the old number (sync.ts BRAIN_PROGRESS_FORMAT).
@@ -258,7 +263,7 @@ export function parseProgress(raw: string | null | undefined): BrainProgress {
   if (!raw) return emptyProgress()
   try {
     const data = JSON.parse(raw) as Partial<Omit<BrainProgress, 'v'>> & { v?: unknown }
-    if (!data || (data.v !== 1 && data.v !== 2 && data.v !== 3) || typeof data.games !== 'object' || data.games === null) return emptyProgress()
+    if (!data || (data.v !== 1 && data.v !== 2 && data.v !== 3 && data.v !== BRAIN_SAVE_FORMAT) || typeof data.games !== 'object' || data.games === null) return emptyProgress()
     const oldScale = data.v === 1
     const games: BrainProgress['games'] = {}
     // Older still: v1 records written before Today's Training existed (so without `sessions`)
@@ -328,7 +333,7 @@ export function parseProgress(raw: string | null | undefined): BrainProgress {
     }
     const timing = data.settings && TIMING_MODES.includes(data.settings.timing) ? data.settings.timing : 1
     return {
-      v: 3,
+      v: BRAIN_SAVE_FORMAT,
       games,
       totalRounds: num(data.totalRounds),
       totalPoints: num(data.totalPoints),

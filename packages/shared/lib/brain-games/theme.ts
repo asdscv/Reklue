@@ -32,6 +32,7 @@ export const GAME_THEMES: Record<BrainGameId, GameTheme> = {
   codeBreak: { cardFrom: '#A16207', cardTo: '#854D0E', canvasFrom: '#241703', canvasTo: '#713F12', accent: '#FDE047', glow: 'rgba(253,224,71,0.5)' },
   makeNumber: { cardFrom: '#4338CA', cardTo: '#3730A3', canvasFrom: '#12103A', canvasTo: '#312E81', accent: '#A5B4FC', glow: 'rgba(165,180,252,0.55)' },
   mazeRun: { cardFrom: '#15803D', cardTo: '#166534', canvasFrom: '#052E16', canvasTo: '#14532D', accent: '#86EFAC', glow: 'rgba(134,239,172,0.5)' },
+  cardRecall: { cardFrom: '#92400E', cardTo: '#713A18', canvasFrom: '#201009', canvasTo: '#4A2417', accent: '#FED7AA', glow: 'rgba(254,215,170,0.5)' },
 }
 
 /**

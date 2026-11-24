@@ -655,6 +655,25 @@ describe('the board games\' new round logic (GAMES_DIFFICULTY_PLAN §2.3-2.9)', 
     spy.mockRestore()
   })
 
+  it('keeps the Make the Number worked equation visible until Continue', () => {
+    seed((p) => ({ ...p, practiced: [...p.practiced, 'makeNumber'], games: { ...p.games, makeNumber: { level: 1, bestLevel: 1, rounds: 25, wins: 22 } } }))
+    const { result } = renderHook(() => useBrainRound('makeNumber', PLATFORM))
+    const initial = result.current
+    const view = initial.view
+    if (view.kind !== 'makeNumber') throw new Error('expected equation')
+    const solution = initial.solution![0]
+    const wrong = view.ops.find((op) => op.index !== solution)!
+    act(() => initial.tap(wrong.index))
+    for (let i = 0; i < view.tries.total; i++) act(() => initial.tap(view.submit.index))
+    expect(result.current.reviewPending).toBe(true)
+    expect(result.current.view).toMatchObject({ reveal: { lines: [expect.stringContaining('=')] } })
+    advance(30_000)
+    expect(result.current.trialId).toBe(initial.trialId)
+    act(() => result.current.skipReveal())
+    advance(1)
+    expect(result.current.trialId).toBe(initial.trialId + 1)
+  })
+
   it("a right Number Pattern answer keeps the row's rule up 1.3s (plan §3.2), skippable after 500ms", () => {
     seed((p) => ({ ...p, games: { ...p.games, series: { level: 6, bestLevel: 6, rounds: 60, wins: 50 } } }))
     const { result } = renderHook(() => useBrainRound('series', PLATFORM))
@@ -684,8 +703,8 @@ describe('the board games\' new round logic (GAMES_DIFFICULTY_PLAN §2.3-2.9)', 
   it("a v1 save shaped like the owner's (Quick Math L3, no estimate) opens on placement, from its converted level", () => {
     const v1 = JSON.stringify({ v: 1, games: { math: { level: 3, bestLevel: 3.4, rounds: 120, wins: 100 } }, practiced: ['math'], sessions: {}, quickEyeField: 2 })
     const progress = parseProgress(v1)
-    // Written as the current format (v3 since the thinking games), levels on the v2 scale.
-    expect(progress.v).toBe(3)
+    // Written as the current format, levels on the v2 scale.
+    expect(progress.v).toBe(4)
     expect(progress.games.math?.level).toBeCloseTo(2.35)
     useBrainStore.setState({ progress, meta: parseMeta(JSON.stringify({ v: 1, seen: '' })), history: emptyHistory(), storageKey: 'test' })
     const { calls, restore } = spyCreates('math')

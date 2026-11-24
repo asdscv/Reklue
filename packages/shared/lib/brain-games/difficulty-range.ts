@@ -15,6 +15,7 @@ import { setMatch, setMatchBoard, type SetMatchState } from './games/set-match'
 import { codeBreak } from './games/code-break'
 import { makeNumber, type MakeNumberState } from './games/make-number'
 import { mazeRun, measureWalk, type MazeState } from './games/maze-run'
+import { cardRecall } from './games/card-recall'
 
 /** The existing content ladder keeps its level numbers; twenty harder levels follow it. */
 type DifficultyStage = 'foundation' | 'normal' | 'extreme'
@@ -216,5 +217,10 @@ export const DIFFICULTY_GAMES = {
       return { ...s, keys, steps: path.length, ...measures, previewMs: s.hidden ? Math.round(mix(s.previewMs, 500, d)) : s.previewMs, maxMistakes: s.hidden ? Math.round(s.maxMistakes * (1 - d)) : s.maxMistakes }
     },
     floor: (s) => 1500 + s.steps * 180,
+  }),
+  cardRecall: widen(cardRecall, {
+    foundation: (s) => s,
+    extreme: (s, depth) => ({ ...s, previewMs: Math.round(mix(s.previewMs, 900, depth)) }),
+    floor: (s) => 2400 + s.cards.length * 1800,
   }),
 } satisfies Record<BrainGameId, { id: BrainGameId }>

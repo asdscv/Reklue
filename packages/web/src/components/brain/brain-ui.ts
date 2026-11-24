@@ -1,4 +1,4 @@
-import { Aperture, Compass, LayoutGrid, Layers, Lock, Repeat, Copy, Hash, Eye, Droplet, PlusCircle, Target, TrendingUp, type LucideIcon } from 'lucide-react'
+import { Aperture, Compass, Heart, LayoutGrid, Layers, Lock, Repeat, Copy, Hash, Eye, Droplet, PlusCircle, Target, TrendingUp, type LucideIcon } from 'lucide-react'
 import { INK_COLORS, maxRowsFor, type CellInk } from '@reklue/shared/lib/brain-games'
 import type { BrainStorage } from '@reklue/shared/stores/brain-store'
 import type { PlatformContext } from '@reklue/shared/hooks/useBrainRound'
@@ -19,6 +19,7 @@ export const BRAIN_ICONS: Record<string, LucideIcon> = {
   lock: Lock,
   target: Target,
   compass: Compass,
+  heart: Heart,
 }
 
 /** Ink colours for the colour-word game (shared with the app). */

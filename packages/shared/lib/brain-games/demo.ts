@@ -31,6 +31,7 @@ const DEMO_SETUP: Record<BrainGameId, { level: number; seed: number }> = {
   makeNumber: { level: 1, seed: 2 },
   // A 4×4 maze from the bottom-left corner with one fork and four turns (games/maze-run.ts).
   mazeRun: { level: 1, seed: 6 },
+  cardRecall: { level: 1, seed: 12 },
 }
 
 const TAP_HOLD_MS = 650

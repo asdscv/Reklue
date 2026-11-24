@@ -15,7 +15,7 @@ export const BRAIN_CONTENT_GUIDES: readonly BrainContentGuide[] = [
   { id: 'overview', name: 'Brain Training', query: '두뇌 훈련 게임 하는 법', queryLocale: 'ko', aliases: /brain\s*(training|games?)|두뇌\s*(훈련|트레이닝|게임)|뇌\s*훈련|脳トレ|trò chơi trí (nhớ|não)|rèn luyện trí não/i, rule: 'Choose a game or Today’s Training (5 or 20 minutes). Difficulty adapts to play. Levels describe performance in that game, not intelligence or health.' },
   { id: 'setMatch', name: 'Set Match', query: '합 찾기 게임 규칙', queryLocale: 'ko', aliases: /합\s*찾기|set[- ]?match|set card game/i, rule: 'Pick three cards. For EACH attribute, the three values must be all the same or all different. Two alike and one different is invalid. Colour and fill arrive later; some advanced boards offer No set.' },
   { id: 'codeBreak', name: 'Code Break', query: '숫자 야구 하는 법', queryLocale: 'ko', aliases: /숫자\s*야구|bulls?\s*(?:and|&)\s*cows?|code[- ]?break/i, rule: 'Deduce a secret code using earlier guesses. A strike means correct digit and position; a ball means correct digit in another position. Early codes have distinct digits; repeats arrive with a rule card. The foundation is one digit from two choices. Regular levels are untimed with limited guesses; extreme levels also use the selected timing setting.' },
-  { id: 'makeNumber', name: 'Make the Number', query: '숫자 만들기 게임 풀이', queryLocale: 'ko', aliases: /숫자\s*만들기|make (?:the |a )?number|24[- ]?(?:game|puzzle)|24점\s*게임/i, rule: 'Use each supplied number exactly once to reach the target. Initially the numbers place themselves in a fixed order and the player chooses + or −. Later ×, ÷, ², any order, brackets and intermediate fractions arrive. Each new operator restarts with fewer numbers, then the count grows. ² squares the last number tile once; it does not use another tile. Squaring precedes multiplication and division. Multiplication and division precede addition and subtraction; brackets first.' },
+  { id: 'makeNumber', name: 'Make the Number', query: '숫자 만들기 게임 풀이', queryLocale: 'ko', aliases: /숫자\s*만들기|make (?:the |a )?number|24[- ]?(?:game|puzzle)|24점\s*게임/i, rule: 'Use each supplied number exactly once to reach the target. Initially the numbers place themselves in a fixed order and the player chooses + or −. Later ×, ÷, ², any order, brackets and intermediate fractions arrive. Each new operator restarts with fewer numbers, then the count grows. Tap Square, then choose a number in the equation. Repeat those steps on a squared number to undo it. Squaring precedes multiplication and division. Multiplication and division precede addition and subtraction; brackets first.' },
   { id: 'mazeRun', name: 'Maze Run', query: '미로 찾기 게임 푸는 법', queryLocale: 'ko', aliases: /미로\s*(찾기|게임|풀이)|maze(?: run| game| puzzle| solving)|迷路/i, rule: 'Trace open corridors to the flag. Retracing erases the path. Some mazes require numbered keys in order; collected keys stay collected when backtracking. Later walls hide after a preview. Adjacent-cell tapping is an alternative to dragging.' },
   { id: 'schulte', name: 'Number Hunt', query: '숫자 순서 게임 하는 법', queryLocale: 'ko', aliases: /숫자\s*순서|number hunt|schulte\s*(?:table|grid)/i, rule: 'Tap the scattered numbers in the requested order. Later tasks include reverse order, alternating series and a preview followed by face-down cards. Follow the rule displayed on that board.' },
   { id: 'memoryGrid', name: 'Flash Grid', query: '순간 기억 게임 하는 법', queryLocale: 'ko', aliases: /순간\s*기억|flash grid|memory grid/i, rule: 'Remember the briefly lit cells, then tap those locations. Larger boards and more cells arrive as difficulty rises; some boards show the pattern in waves.' },
@@ -25,6 +25,7 @@ export const BRAIN_CONTENT_GUIDES: readonly BrainContentGuide[] = [
   { id: 'stroop', name: 'Color Word', query: '색깔 단어 게임 규칙', queryLocale: 'ko', aliases: /색깔\s*단어|colou?r word|stroop (?:game|task)/i, rule: 'Initially choose the colour of the ink, not the word’s meaning. Later follow the cue for ink or word. The app uses blue, orange, purple, black, brown and grey, rather than a red-green pair.' },
   { id: 'math', name: 'Quick Math', query: '빠른 계산 게임 하는 법', queryLocale: 'ko', aliases: /빠른\s*계산|quick math|mental arithmetic game/i, rule: 'Calculate the expression and choose the answer. Apply brackets first, then multiplication and division, then addition and subtraction.' },
   { id: 'oddOneOut', name: 'Odd One Out', query: '다른 하나 찾기 게임 하는 법', queryLocale: 'ko', aliases: /다른\s*하나\s*찾기|odd one out (?:game|puzzle)/i, rule: 'Find the single different item among similar items. Compare shapes or glyph details; later boards may include a No different item option. A lone rotated item is not a game mode.' },
+  { id: 'cardRecall', name: 'Playing Card Recall', query: '트럼프 카드 기억 게임 하는 법', queryLocale: 'ko', aliases: /(?:트럼프\s*카드|포커\s*카드)\s*기억|playing card recall|poker card memory|トランプ記憶|nhớ bài tây/i, rule: 'Remember the rank, suit and position of each card in a standard 52-card deck. Once the cards are hidden, select a rank and suit for each position, then confirm. Advanced levels show five community cards and two hole cards with less viewing time.' },
 ]
 
 const medicalIntent = /치매|알츠하이머|진단|치료|예방|인지\s*검사|dementia|alzheimer|diagnos|treat(?:ment)?|prevent|\biq\b|adhd|認知症|治療|予防|sa sút trí tuệ|chẩn đoán|điều trị/i
@@ -75,7 +76,7 @@ export function brainCtaCopy(locale: string): typeof BRAIN_CTA[string] {
 }
 
 /** Curated search wording for the existing generated locales; avoid literal "number baseball". */
-const SEARCH_PHRASES: Record<BrainGuideId, { en: string; ja: string; vi: string }> = {
+const SEARCH_PHRASES = {
   overview: { en: 'brain training games for beginners', ja: '脳トレゲームの遊び方', vi: 'cách chơi trò chơi trí não' },
   setMatch: { en: 'set card game rules', ja: 'セットカードゲームのルール', vi: 'luật chơi tìm bộ ba thẻ' },
   codeBreak: { en: 'bulls and cows rules', ja: '数字当てゲームのルール', vi: 'luật chơi đoán mã số' },
@@ -89,7 +90,8 @@ const SEARCH_PHRASES: Record<BrainGuideId, { en: string; ja: string; vi: string 
   stroop: { en: 'color word game rules', ja: '色と文字のゲームのルール', vi: 'luật chơi màu sắc và từ ngữ' },
   math: { en: 'mental arithmetic game practice', ja: '暗算ゲームの遊び方', vi: 'cách luyện chơi tính nhẩm' },
   oddOneOut: { en: 'odd one out puzzle tips', ja: '仲間外れ探しゲームのコツ', vi: 'cách chơi tìm hình khác biệt' },
-}
+  cardRecall: { en: 'playing card recall game', ja: 'トランプ記憶ゲームの遊び方', vi: 'cách chơi nhớ bài tây' },
+} satisfies Record<BrainGuideId, { en: string; ja: string; vi: string }>
 export function brainSearchPhrase(id: BrainGuideId, locale: string): string {
   const lang = locale.toLowerCase().split(/[-_]/)[0]
   return lang === 'ko' ? brainGuide(id)!.query : SEARCH_PHRASES[id][lang as 'en' | 'ja' | 'vi'] ?? SEARCH_PHRASES[id].en
