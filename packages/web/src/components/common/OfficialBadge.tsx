@@ -6,6 +6,7 @@ interface OfficialBadgeProps {
   size?: 'sm' | 'md'
   badgeType?: BadgeType
   badgeColor?: string
+  lang?: string
 }
 
 const sizeClasses = {
@@ -21,9 +22,10 @@ const BADGE_CONFIG: Record<BadgeType, { label: string; bgClass: string; textClas
   partner: { label: 'Partner', bgClass: 'bg-destructive/15', textClass: 'text-destructive' },
 }
 
-export function OfficialBadge({ className = '', size = 'sm', badgeType = 'verified', badgeColor }: OfficialBadgeProps) {
-  const { t } = useTranslation('common')
+export function OfficialBadge({ className = '', size = 'sm', badgeType = 'verified', badgeColor, lang }: OfficialBadgeProps) {
+  const { t } = useTranslation('common', { lng: lang })
   const config = BADGE_CONFIG[badgeType] || BADGE_CONFIG.verified
+  const label = badgeType === 'official' ? t('officialBadge.label', { defaultValue: config.label }) : config.label
 
   const colorStyle = badgeColor
     ? { backgroundColor: `${badgeColor}1A`, color: badgeColor }
@@ -49,7 +51,7 @@ export function OfficialBadge({ className = '', size = 'sm', badgeType = 'verifi
       >
         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
       </svg>
-      {config.label}
+      {label}
     </span>
   )
 }

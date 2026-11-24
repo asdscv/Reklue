@@ -40,7 +40,7 @@ export function OfficialWordList({ listing, lang, signedIn }: OfficialWordListPr
         </h1>
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
           <span>{listing.title}</span>
-          {listing.owner_is_official && <OfficialBadge />}
+          {listing.owner_is_official && <OfficialBadge badgeType="official" lang={lang} />}
         </div>
         <p className="text-muted-foreground leading-relaxed">{wordListIntro(listing, lang)}</p>
         {termLang === 'ja' && (

@@ -73,6 +73,22 @@ describe('PublicListingPage', () => {
     })
   })
 
+  it('uses the official badge on an official Japanese word list', async () => {
+    mockRpc.mockResolvedValue({
+      data: {
+        ...mockListing,
+        title: 'JLPT N5 일본어 기초 동사',
+        native_language: 'ko',
+        tags: ['source:ja', 'target:ko', 'learning_language:ja', 'level:jlpt-n5-verbs'],
+        owner_is_official: true,
+      },
+      error: null,
+    })
+    renderPage()
+
+    expect(await screen.findByTestId('official-badge')).toHaveAttribute('data-badge-type', 'official')
+  })
+
   it('should show 404 when RPC returns null data', async () => {
     mockRpc.mockResolvedValue({ data: null, error: null })
     renderPage()
