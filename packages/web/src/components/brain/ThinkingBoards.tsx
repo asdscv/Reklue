@@ -4,7 +4,7 @@ import { Flag, KeyRound, Undo2 } from 'lucide-react'
 import { MAZE_WALL, POKER_SUITS, SET_COLORS, type CardRecallView, type CodeBreakView, type MakeNumberView, type MazeView, type SetCard, type SetMatchView } from '@reklue/shared/lib/brain-games'
 import { mazeDragCells, mazePoint, type MazePoint } from '@reklue/shared/lib/brain-games/maze-drag'
 import type { BoardProps } from './BrainBoard'
-import { boardHeight } from './brain-ui'
+import { boardHeight, focusIfKeyboard } from './brain-ui'
 
 type Props<V> = BoardProps & { view: V }
 const buttonClass = 'rounded-xl border-2 border-white/25 bg-white/10 text-white font-bold disabled:opacity-40 disabled:cursor-default enabled:hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white cursor-pointer'
@@ -128,44 +128,110 @@ export function MakeNumberBoard({ view, onTap, width, demo, onSkip }: Props<Make
   </div>
 }
 
-export function CardRecallBoard({ view, onTap, width, demo, paused, theme }: Props<CardRecallView>) {
+export function CardRecallBoard({ view, onTap, width, demo, paused, theme, onSkip }: Props<CardRecallView>) {
   const { t } = useTranslation('brain')
+  const { input, preview, rows, slots } = view
+  const board = useRef<HTMLDivElement>(null)
+  const active = input?.active
+  const rank = input?.rank
+  const resetRank = input?.resetRank
+  const focusIndex = rank ? input?.suits[0]?.index : active === null ? input?.submit.index : input?.ranks[0]?.index
+  useEffect(() => {
+    if (focusIndex !== undefined && !demo && !paused) focusIfKeyboard(board.current?.querySelector<HTMLButtonElement>(`[data-tap="${focusIndex}"]`))
+  }, [focusIndex, demo, paused])
+  const compact = !!rows || view.hands.length > 1
+  const review = !input && !preview
   const cardWidth = Math.min(demo ? 48 : 68, Math.max(44, Math.floor((width - 24) / 5)))
-  const columns = Math.min(7, Math.max(1, Math.floor((width + 4) / (demo ? 32 : 48))))
-  const group = (slots: CardRecallView['slots'], title?: string) => <div className="space-y-1">
+  const cardHeight = demo ? 46 : review ? (compact ? 57 : 80) : rows ? 46 : compact ? 50 : 66
+  const cardFont = demo ? 16 : compact ? 18 : 24
+  const columns = width >= (demo ? 220 : 332) ? 7 : 5
+  const currentRow = rows?.find(({ start, end }) => active != null && active >= start && active < end) ?? rows?.at(-1)
+  const actionHeight = demo ? 28 : 44
+  const buttonStyle = { width: '100%', minHeight: actionHeight, fontSize: demo ? 14 : 16 }
+  const primary = { ...buttonStyle, background: theme.accent, color: '#201009', borderColor: theme.accent }
+
+  const group = (cards: CardRecallView['slots'], title?: string) => <div className="space-y-1">
     {title && <p className="text-center text-sm font-semibold text-white/85">{title}</p>}
-    <div className="flex flex-wrap justify-center gap-1.5">
-      {slots.map((slot) => {
+    <div className={rows ? 'grid grid-cols-5 gap-1' : 'flex flex-wrap justify-center gap-1.5'}>
+      {cards.map((slot) => {
         const suit = slot.suit && t(`play.cardRecallSuits.${slot.suit}`)
         const position = t('play.cardRecallPosition', { position: slot.index + 1 })
-        const verdict = slot.correct === undefined ? '' : t(slot.correct ? 'play.correct' : 'play.wrong')
-        const label = [position, slot.rank, suit, verdict].filter(Boolean).join(', ')
+        const verdict = slot.correct === undefined ? '' : t(slot.correct ? 'play.correct' : 'play.cardRecallWrong')
+        const guess = slot.guess
+        const guessLabel = guess === null ? t('play.cardRecallEmpty') : guess && t('play.cardRecallYourAnswer', { card: `${guess.rank} ${t(`play.cardRecallSuits.${guess.suit}`)}` })
+        const label = [position, slot.rank ?? t('play.cardRecallEmpty'), suit, verdict, guessLabel].filter(Boolean).join(', ')
         const red = slot.suit === 'hearts' || slot.suit === 'diamonds'
-        return <Tap key={slot.index} index={slot.index} onTap={onTap} demo={demo} disabled={!view.input} selected={view.input ? slot.active : undefined} label={label}
-          style={{ width: cardWidth, minHeight: demo ? 46 : 66, padding: 0, opacity: 1, borderColor: slot.active ? theme.accent : '#FFFFFF40', background: slot.rank ? '#FFFDF9' : '#FFFFFF16', color: slot.rank ? red ? '#A71D2A' : '#172033' : '#FFFFFFB3', outline: slot.active ? `2px solid ${theme.accent}` : undefined }}>
-          <span className="relative flex flex-col items-center justify-center leading-none" aria-hidden="true" style={{ fontSize: demo ? 16 : 24 }}>
-            {slot.rank ?? '?'}
+        const ink = slot.rank ? red ? '#A71D2A' : '#172033' : '#FFFFFFB3'
+        return <Tap key={slot.index} index={slot.index} onTap={onTap} demo={demo} disabled={!input || paused}
+          selected={input ? slot.active : undefined} label={label}
+          style={{ position: 'relative', width: rows ? '100%' : cardWidth, minHeight: cardHeight, padding: '11px 0 0', opacity: 1, borderStyle: slot.rank || slot.active ? 'solid' : 'dashed', borderColor: slot.active ? theme.accent : '#FFFFFF40', background: slot.rank ? '#FFFDF9' : slot.active ? '#FED7AA26' : '#FFFFFF0E', color: ink }}>
+          <span className="absolute left-1 top-0 text-[11px]/4 tabular-nums opacity-85" aria-hidden="true">{slot.index + 1}</span>
+          <span className={`flex items-center justify-center leading-none ${compact ? 'gap-0.5' : 'flex-col'}`} aria-hidden="true" style={{ fontSize: cardFont }}>
+            {slot.rank ?? '—'}
             {slot.suit && <span>{POKER_SUITS[slot.suit]}</span>}
-            {slot.correct !== undefined && <span className="absolute -right-3 -top-1 text-xs text-slate-800">{slot.correct ? '✓' : '×'}</span>}
           </span>
+          {slot.correct !== undefined && <span className={`absolute right-0.5 top-0 text-xs ${slot.correct ? 'text-emerald-800' : 'text-red-800'}`} aria-hidden="true">{slot.correct ? '✓' : '×'}</span>}
+          {guess && <span className="block truncate px-0.5 text-[10px]/4 text-slate-700" aria-hidden="true">{t('play.cardRecallYourAnswer', { card: guess.rank + POKER_SUITS[guess.suit] })}</span>}
         </Tap>
       })}
     </div>
   </div>
-  const publicCount = view.slots.length - view.privateCount
-  return <div style={{ width }} className={demo ? 'space-y-1' : 'space-y-3'} data-testid="brain-card-recall">
-    {group(view.slots.slice(0, publicCount), view.privateCount ? t('play.cardRecallCommunity') : undefined)}
-    {view.privateCount > 0 && group(view.slots.slice(publicCount), t('play.cardRecallPrivate'))}
-    {view.previewMs && <PreviewBar ms={view.previewMs} paused={paused} />}
-    {view.input && <>
-      <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
-        {view.input.ranks.map((key) => <Tap key={key.value} {...key} onTap={onTap} demo={demo} style={{ minHeight: demo ? 28 : 44, fontSize: demo ? 14 : 19, borderColor: key.selected ? theme.accent : undefined }}>{key.value}</Tap>)}
+
+  const publicCount = view.hands[0]?.start ?? slots.length
+  const table = !rows && <>
+    {group(slots.slice(0, publicCount), view.hands.length > 0 ? t('play.cardRecallCommunity') : undefined)}
+    {view.hands.length > 0 && <div className="flex flex-wrap justify-center gap-x-3 gap-y-1.5">
+      {view.hands.map(({ start, end, title }) => <div key={start} style={{ width: 2 * cardWidth + 6 }}>
+        {group(slots.slice(start, end), t(title.key, title.params))}
+      </div>)}
+    </div>}
+  </>
+  const ranks = input && <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+    {input.ranks.map((key) => <Tap key={key.value} {...key} disabled={key.disabled || paused} onTap={onTap} demo={demo}
+      style={{ minHeight: actionHeight, fontSize: demo ? 14 : 19, borderColor: key.selected ? theme.accent : undefined }}>{key.value}</Tap>)}
+  </div>
+  const suits = input && rank && <div className="grid grid-cols-4 gap-1">
+    {input.suits.map((key) => {
+      const name = t(`play.cardRecallSuits.${key.value}`)
+      return <Tap key={key.value} {...key} disabled={key.disabled || paused} onTap={onTap} demo={demo}
+        label={`${rank} ${name}`} style={{ minHeight: actionHeight, padding: 0, background: '#FFFDF9', borderColor: 'transparent', color: key.value === 'hearts' || key.value === 'diamonds' ? '#A71D2A' : '#172033' }}>
+        <span className="block text-xl leading-none" aria-hidden="true">{rank}{POKER_SUITS[key.value]}</span>
+        {!demo && <span className="block text-xs leading-tight" aria-hidden="true">{name}</span>}
+      </Tap>
+    })}
+  </div>
+
+  return <div ref={board} style={{ width, maxWidth: '100%' }} className={demo ? 'space-y-1' : 'space-y-1.5'} data-testid="brain-card-recall">
+    {preview && <PreviewBar ms={preview.ms} paused={paused} />}
+    {rows ? input && currentRow ? <>
+      <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.min(rows.length, Math.max(1, Math.floor((width + 4) / 48)))}, minmax(0, 1fr))` }} data-testid="brain-card-ranges">
+        {rows.map((row) => <Tap key={row.start} index={row.target} onTap={onTap} demo={demo}
+          disabled={paused} selected={currentRow === row} label={t('play.cardRecallRange', { start: row.start + 1, end: row.end })}
+          style={{ minHeight: actionHeight, fontSize: 12, padding: 0, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', borderColor: currentRow === row ? theme.accent : undefined, background: currentRow === row ? '#FED7AA26' : undefined }}>
+          {row.start + 1}–{row.end}
+        </Tap>)}
       </div>
-      <div className="grid grid-cols-4 gap-1">
-        {view.input.suits.map((key) => <Tap key={key.value} {...key} onTap={onTap} demo={demo} label={t(`play.cardRecallSuits.${key.value}`)} style={{ minHeight: demo ? 28 : 44, fontSize: demo ? 17 : 24 }}>{POKER_SUITS[key.value]}</Tap>)}
+      {group(slots.slice(currentRow.start, currentRow.end))}
+    </> : <div className="space-y-1 overflow-y-auto overscroll-contain rounded-xl" style={{ maxHeight: 'max(140px, calc(100dvh - 268px))' }} data-testid="brain-card-deck">
+      {rows.map(({ start, end }) => <div key={start}>{group(slots.slice(start, end))}</div>)}
+    </div> : table}
+    {preview && <Tap index={preview.index} disabled={paused} onTap={onTap} demo={demo} style={primary}>{t('play.cardRecallStart')}</Tap>}
+    {input && <>
+      <div className="flex flex-col justify-end gap-1" style={{ minHeight: Math.ceil(input.ranks.length / columns) * (actionHeight + 4) - 4 }}>
+        {resetRank !== undefined
+          ? <><Tap index={resetRank} disabled={paused} onTap={onTap} demo={demo} style={buttonStyle}>{t('play.cardRecallChangeRank')}</Tap>{suits}</>
+          : ranks}
       </div>
-      <Tap {...view.input.submit} onTap={onTap} demo={demo} style={{ width: '100%', minHeight: demo ? 28 : 44 }}>{t('play.submit')}</Tap>
+      <div className="flex gap-1">
+        {input.skip !== undefined && <Tap index={input.skip} disabled={paused} onTap={onTap} demo={demo}
+          style={{ ...buttonStyle, width: '42%' }}>{t('play.cardRecallSkip')}</Tap>}
+        <Tap index={input.submit.index} disabled={input.submit.disabled || paused} onTap={onTap} demo={demo}
+          style={input.submit.answered === slots.length ? primary : buttonStyle}>
+          {t('play.cardRecallSubmit', { answered: input.submit.answered, total: slots.length })}
+        </Tap>
+      </div>
     </>}
+    {!input && !preview && onSkip && !demo && <button type="button" className={buttonClass} style={primary} disabled={paused} onClick={onSkip}>{t('training.continue')}</button>}
   </div>
 }
 

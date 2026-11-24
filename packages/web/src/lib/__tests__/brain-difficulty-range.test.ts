@@ -10,7 +10,7 @@ const screens = [{ maxCols: 3, maxRows: 4 }, { maxCols: 5, maxRows: 7 }, { maxCo
 
 for (const game of BRAIN_GAMES) {
   describe(`${game.id}: foundation and extreme range`, () => {
-    it('has an untimed foundation and twenty progressively timed extreme levels on each screen', () => {
+    it('has an untimed foundation and twenty extreme levels with a usable deadline on each screen', () => {
       for (const screen of screens) {
         const ctx = { ...DEFAULT_CONTEXT, ...screen }
         const max = game.def.maxLevel!(ctx)
@@ -22,7 +22,8 @@ for (const game of BRAIN_GAMES) {
         expect(game.def.view(first).difficulty).toBe('extreme')
         expect(game.def.view(high).difficulty).toBe('extreme')
         expect(game.def.timeLimitMs(high)).toBeGreaterThanOrEqual(200)
-        expect(game.def.timeLimitMs(high)).toBeLessThan(game.def.timeLimitMs(first)!)
+        if (game.id === 'cardRecall') expect(game.def.timeLimitMs(high)).toBeGreaterThan(game.def.timeLimitMs(first)!)
+        else expect(game.def.timeLimitMs(high)).toBeLessThan(game.def.timeLimitMs(first)!)
         expect(game.def.timeLimitMs(JSON.parse(JSON.stringify(high)))).toBe(game.def.timeLimitMs(high))
       }
     })

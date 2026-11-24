@@ -32,7 +32,7 @@ export function DemoPlayer({ gameId, width }: { gameId: BrainGameId; width: numb
   const [pointer, setPointer] = useState<{ x: number; y: number; press: boolean } | null>(null)
   // The demo's frames can differ in height (a strip or a reveal appears): hold the tallest seen so
   // far, so the page under the demo never jumps.
-  const minH = useRef(220)
+  const minH = useRef(gameId === 'cardRecall' ? 152 : 220)
   const frame = frames[Math.min(i, frames.length - 1)]
 
   useEffect(() => {

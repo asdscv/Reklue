@@ -115,7 +115,7 @@
     },
     "cardRecall": {
       "name": "Ingat Kartu Remi",
-      "desc": "Ingat nilai, jenis, dan posisi setiap kartu. Berlatih hingga lima kartu komunitas dan dua kartu pribadi dengan waktu melihat yang lebih singkat."
+      "desc": "Ingat nilai, jenis, dan urutan setiap kartu. Di level tinggi, ingat hingga 30 kartu dari satu dek."
     },
     "mazeRun": {
       "name": "Labirin",
@@ -270,12 +270,22 @@
     "makeSquareButton": "Kuadrat x²",
     "makeSquareHint": "Ketuk angka untuk menguadratkannya. Ketuk angka yang sudah dikuadratkan untuk membatalkan.",
     "makeAnswer": "Contoh persamaan yang benar",
-    "cardRecallMemorize": "Ingat posisi setiap kartu",
-    "cardRecallEnter": "Pilih nilai lalu jenis untuk setiap kartu",
-    "cardRecallCheck": "Ketuk kartu untuk mengubahnya atau konfirmasi",
+    "cardRecallMemorize": "Hafalkan {{total}} kartu sesuai urutan",
+    "cardRecallStart": "Sembunyikan dan jawab",
+    "cardRecallPickSuit": "Posisi {{position}} · Pilih kartu {{rank}}",
+    "cardRecallChangeRank": "Ubah nilai",
+    "cardRecallSkip": "Lewati",
+    "cardRecallEmpty": "Kosong",
+    "cardRecallWrong": "Salah",
+    "cardRecallYourAnswer": "Pilihanmu {{card}}",
+    "cardRecallRange": "Kartu {{start}}–{{end}}",
+    "cardRecallSubmit": "{{answered}}/{{total}} · Periksa",
+    "cardRecallEnter": "Posisi {{position}} · Pilih nilai",
+    "cardRecallCheck": "Tinjau kartumu, lalu periksa jawaban",
     "cardRecallResult": "{{correct}} dari {{total}} kartu benar",
     "cardRecallCommunity": "Kartu komunitas",
-    "cardRecallPrivate": "Kartu pribadi",
+    "cardRecallPrivate": "Kartu Anda",
+    "cardRecallOpponent": "Lawan {{number}}",
     "cardRecallPosition": "Kartu {{position}}",
     "cardRecallSuits": {
       "spades": "Sekop",
@@ -319,6 +329,7 @@
   },
   "intro": {
     "howTo": "Cara bermain",
+    "cardRecallTip": "Setelah kartu disembunyikan, isi posisi yang sama. Jika tadi melihat 7♥, ketuk 7 lalu pilih 7♥.",
     "replay": "Putar ulang",
     "start": "Mulai",
     "practiceNote": "Beberapa soal pertama adalah latihan. Kesempatan dan poin tidak berkurang.",

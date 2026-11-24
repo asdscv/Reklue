@@ -312,14 +312,20 @@ export interface PokerCard { rank: PokerRank; suit: PokerSuit }
 export interface CardRecallView {
   kind: 'cardRecall'
   prompt: PromptView
-  /** The last two positions are private cards when the full hold'em board is shown. */
-  privateCount: 0 | 2
-  previewMs?: number
-  slots: { index: number; rank?: PokerRank; suit?: PokerSuit; active: boolean; correct?: boolean }[]
+  /** At a showdown, each hand has a two-card range after the five community cards. */
+  hands: { start: number; end: number; title: PromptView }[]
+  /** Longer sequences use numbered rows. Each row's tap selects its first unanswered position. */
+  rows?: { start: number; end: number; target: number }[]
+  preview?: { ms: number; index: number }
+  slots: { index: number; rank?: PokerRank; suit?: PokerSuit; active: boolean; correct?: boolean; guess?: PokerCard | null }[]
   input?: {
+    active: number | null
+    rank: PokerRank | null
+    skip?: number
     ranks: { value: PokerRank; index: number; disabled: boolean; selected: boolean }[]
     suits: { value: PokerSuit; index: number; disabled: boolean }[]
-    submit: { index: number; disabled: boolean }
+    resetRank?: number
+    submit: { index: number; disabled: boolean; answered: number }
   }
 }
 

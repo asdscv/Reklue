@@ -388,10 +388,12 @@ function Round({ gameId, onOver, caption, width, theme, timeBudgetMs }: { gameId
         </div>
       </div>
 
-      <section className="relative flex flex-col items-center justify-center gap-5 pt-6 pb-10">
-        {r.view.difficulty && <p className="text-center text-sm font-semibold text-white/80" data-testid="brain-difficulty-stage">{t(`play.difficulty.${r.view.difficulty}`)}</p>}
+      <section className={r.view.kind === 'cardRecall'
+        ? 'relative flex flex-col items-center justify-center gap-2 pt-3 pb-4'
+        : 'relative flex flex-col items-center justify-center gap-5 pt-6 pb-10'}>
+        {r.view.difficulty && r.view.kind !== 'cardRecall' && <p className="text-center text-sm font-semibold text-white/80" data-testid="brain-difficulty-stage">{t(`play.difficulty.${r.view.difficulty}`)}</p>}
         {r.view.difficulty === 'extreme' && gameId === 'sequence' && <p className="text-center text-sm text-white/80">{t('play.extremeSequence')}</p>}
-        {!r.reviewPending && <p key={`${r.trialId}-${r.view.prompt.key}`} className="bfx-rise text-xl font-semibold text-center min-h-8" data-testid="brain-prompt">
+        {(!r.reviewPending || r.view.kind === 'cardRecall') && <p key={`${r.trialId}-${r.view.kind === 'cardRecall' && r.view.input ? 'recall' : r.view.prompt.key}`} className="bfx-rise text-xl font-semibold text-center min-h-8" data-testid="brain-prompt">
           {t(r.view.prompt.key, r.view.prompt.params)}
         </p>}
         <div className="relative w-full">
@@ -402,7 +404,7 @@ function Round({ gameId, onOver, caption, width, theme, timeBudgetMs }: { gameId
             onTap={r.tap}
             width={width}
             theme={theme}
-            onSkip={r.view.kind === 'makeNumber' && !r.reviewPending ? undefined : r.skipReveal}
+            onSkip={(r.view.kind === 'makeNumber' || r.view.kind === 'cardRecall') && !r.reviewPending ? undefined : r.skipReveal}
             paused={r.paused || r.intro !== null}
           />
           {/* The verdict, big and brief, over the board. */}
