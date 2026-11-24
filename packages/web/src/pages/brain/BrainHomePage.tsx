@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Settings, Play, Trophy, Clock, Sparkles } from 'lucide-react'
+import { Settings, Play, Trophy, Clock, Shuffle, Sparkles } from 'lucide-react'
 import { formatCount } from '@reklue/shared/lib/format-number'
 import {
   BRAIN_GAMES,
@@ -13,13 +13,11 @@ import {
   displayLevel,
   gameHistory,
   gameProgress,
-  localDayKey,
-  planToday,
   plannedMinutes,
   randomSeed,
-  todaysPlanSeed,
   weekProgress,
 } from '@reklue/shared/lib/brain-games'
+import { useTrainingLineup } from '@reklue/shared/hooks/useTrainingLineup'
 import { useBrainStore } from '@reklue/shared/stores/brain-store'
 import { BRAIN_ICONS, cardBackground } from '../../components/brain/brain-ui'
 import { BrainSettingsDialog } from '../../components/brain/BrainSettingsDialog'
@@ -37,18 +35,16 @@ import { useBrainHydrated } from '../../components/brain/useBrainHydrated'
  */
 export function BrainHomePage() {
   const { t } = useTranslation('brain')
-  useBrainHydrated()
-  const progress = useBrainStore((s) => s.progress)
+  const ready = useBrainHydrated()
+  const { plan: { focus, slots: plan }, progress, today, shuffle } = useTrainingLineup()
   const history = useBrainStore((s) => s.history)
   const meta = useBrainStore((s) => s.meta)
   const setSettings = useBrainStore((s) => s.setSettings)
   const [settingsOpen, setSettingsOpen] = useState(false)
   // Keep the cards steady while browsing; draw a new order on the next visit.
   const [games] = useState(() => createRng(randomSeed()).shuffle(BRAIN_GAMES))
-  const today = localDayKey()
   const week = weekProgress(progress, today)
   const course = courseStatus(progress, today)
-  const { focus, slots: plan } = planToday(progress, createRng(todaysPlanSeed(progress, today)))
   const minutes = plannedMinutes(plan)
 
   const courseChip =
@@ -96,7 +92,7 @@ export function BrainHomePage() {
           <WeekRing done={week.done} goal={week.goal} size={88} label={t('training.week', { done: week.done, goal: week.goal })} />
         </div>
 
-        <ul className="relative mt-5 flex items-center gap-2" aria-label={t('training.lineup')}>
+        <ul className="relative mt-5 flex flex-wrap items-center gap-2" aria-label={t('training.lineup')} aria-live="polite">
           {plan.map((slot, i) => {
             const Icon = BRAIN_ICONS[BRAIN_GAMES.find((g) => g.id === slot.gameId)?.icon ?? '']
             return (
@@ -135,15 +131,27 @@ export function BrainHomePage() {
           </div>
         </div>
 
-        <Link
-          to="/brain/training"
-          className="relative mt-5 flex items-center justify-center gap-2 min-h-14 rounded-2xl bg-white text-lg font-extrabold no-underline shadow-[0_10px_30px_rgba(0,0,0,0.25)] hover:scale-[1.01] active:scale-[0.99] transition-transform"
-          style={{ color: TRAINING_THEME.cardTo }}
-          data-testid="brain-training-start"
-        >
-          <Play className="w-5 h-5 fill-current" aria-hidden="true" />
-          {t('training.start')}
-        </Link>
+        <div className="relative mt-5 grid gap-2 sm:grid-cols-2">
+          <Link
+            to="/brain/training"
+            className="flex items-center justify-center gap-2 min-h-14 rounded-2xl bg-white px-3 text-center text-lg font-extrabold no-underline shadow-[0_10px_30px_rgba(0,0,0,0.25)] hover:scale-[1.01] active:scale-[0.99] transition-transform"
+            style={{ color: TRAINING_THEME.cardTo }}
+            data-testid="brain-training-start"
+          >
+            <Play className="w-5 h-5 shrink-0 fill-current" aria-hidden="true" />
+            {t('training.start')}
+          </Link>
+          <button
+            type="button"
+            onClick={shuffle}
+            disabled={!ready}
+            className="flex items-center justify-center gap-2 min-h-14 rounded-2xl bg-white/10 px-3 text-base font-semibold text-white ring-1 ring-inset ring-white/25 enabled:cursor-pointer enabled:hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white disabled:opacity-50"
+            data-testid="brain-training-shuffle"
+          >
+            <Shuffle className="w-5 h-5 shrink-0" aria-hidden="true" />
+            {t('training.shuffle')}
+          </button>
+        </div>
 
         <div className="relative mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           {courseChip && (

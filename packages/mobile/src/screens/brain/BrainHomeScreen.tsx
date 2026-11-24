@@ -17,22 +17,20 @@ import {
   gameHistory,
   gameProgress,
   hasAchievement,
-  localDayKey,
-  planToday,
   plannedMinutes,
   randomSeed,
-  todaysPlanSeed,
   weekProgress,
   type AchievementId,
   type BrainGameEntry,
 } from '@reklue/shared/lib/brain-games'
+import { useTrainingLineup } from '@reklue/shared/hooks/useTrainingLineup'
 import { useBrainStore } from '@reklue/shared/stores/brain-store'
 import { Screen, ScreenHeader } from '../../components/ui'
 import { useTheme } from '../../theme'
 import { testProps } from '../../utils/testProps'
 import { haptics } from '../../utils/haptics'
 import { BrainSettingsModal } from '../../components/brain/BrainSettingsModal'
-import { GradientFill } from '../../components/brain/GameCanvas'
+import { CanvasButton, GradientFill } from '../../components/brain/GameCanvas'
 import { WeekRing } from '../../components/brain/WeekRing'
 import { Sparkline } from '../../components/brain/Sparkline'
 import { useBrainHydrated } from '../../components/brain/useBrainHydrated'
@@ -52,8 +50,8 @@ export function BrainHomeScreen() {
   const { t } = useTranslation('brain')
   const navigation = useNavigation<Nav>()
   const { width } = useWindowDimensions()
-  useBrainHydrated()
-  const progress = useBrainStore((s) => s.progress)
+  const ready = useBrainHydrated()
+  const { plan: { focus, slots: plan }, progress, today, shuffle } = useTrainingLineup()
   const history = useBrainStore((s) => s.history)
   const meta = useBrainStore((s) => s.meta)
   const setSettings = useBrainStore((s) => s.setSettings)
@@ -64,11 +62,8 @@ export function BrainHomeScreen() {
     setGames(createRng(randomSeed()).shuffle(BRAIN_GAMES))
   }, []))
 
-  const today = localDayKey()
   const week = weekProgress(progress, today)
   const course = courseStatus(progress, today)
-  // The line-up that will actually play: the same seed all day, until a session is finished.
-  const { focus, slots: plan } = planToday(progress, createRng(todaysPlanSeed(progress, today)))
   const minutes = plannedMinutes(plan)
   // Two cards a row on a tablet.
   const twoUp = width >= 600
@@ -123,7 +118,7 @@ export function BrainHomeScreen() {
             <WeekRing done={week.done} goal={week.goal} size={84} label={t('training.week', { done: week.done, goal: week.goal })} />
           </View>
 
-          <View style={styles.lineup} accessible accessibilityLabel={`${t('training.lineup')}: ${plan.map((slot) => t(`games.${slot.gameId}.name`)).join(', ')}`}>
+          <View style={styles.lineup} accessible accessibilityLiveRegion="polite" accessibilityLabel={`${t('training.lineup')}: ${plan.map((slot) => t(`games.${slot.gameId}.name`)).join(', ')}`}>
             {plan.map((slot, i) => (
               <View key={i} style={styles.lineupItem}>
                 <View style={styles.lineupIcon}>
@@ -164,20 +159,23 @@ export function BrainHomeScreen() {
             </View>
           </View>
 
-          <Pressable
-            onPress={() => {
-              haptics.tap()
-              navigation.navigate('BrainTraining')
-            }}
-            style={({ pressed }) => [styles.start, pressed && styles.pressed]}
-            accessibilityRole="button"
-            testID="brain-training-start"
-          >
-            <Feather name="play" size={22} color={TRAINING_THEME.cardTo} />
-            <Text style={[styles.startText, { color: TRAINING_THEME.cardTo }]} numberOfLines={1} maxFontSizeMultiplier={1.3}>
-              {t('training.start')}
-            </Text>
-          </Pressable>
+          <View style={styles.trainingActions}>
+            <Pressable
+              onPress={() => {
+                haptics.tap()
+                navigation.navigate('BrainTraining')
+              }}
+              style={({ pressed }) => [styles.start, pressed && styles.pressed]}
+              accessibilityRole="button"
+              testID="brain-training-start"
+            >
+              <Feather name="play" size={22} color={TRAINING_THEME.cardTo} />
+              <Text style={[styles.startText, { color: TRAINING_THEME.cardTo }]} numberOfLines={1} maxFontSizeMultiplier={1.3}>
+                {t('training.start')}
+              </Text>
+            </Pressable>
+            <CanvasButton variant="glass" icon="shuffle" label={t('training.shuffle')} onPress={shuffle} disabled={!ready} theme={TRAINING_THEME} testID="brain-training-shuffle" />
+          </View>
 
           <View style={styles.heroFoot}>
             {courseChip ? (
@@ -409,10 +407,11 @@ const styles = StyleSheet.create({
   kicker: { color: 'rgba(255,255,255,0.78)', fontSize: 13, fontWeight: '700', letterSpacing: 1 },
   heroTitle: { color: '#FFFFFF', fontSize: 28, fontWeight: '800', letterSpacing: -0.5, marginTop: 2 },
   heroDesc: { color: 'rgba(255,255,255,0.88)', fontSize: 15, lineHeight: 21, marginTop: 4 },
-  lineup: { flexDirection: 'row', alignItems: 'center' },
+  lineup: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 6, alignItems: 'center' },
   lineupItem: { flexDirection: 'row', alignItems: 'center' },
   lineupIcon: { width: 44, height: 44, borderRadius: 13, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
   lineupDash: { width: 12, height: 2, borderRadius: 1, backgroundColor: 'rgba(255,255,255,0.4)', marginHorizontal: 6 },
+  trainingActions: { gap: 8 },
   start: {
     minHeight: 58,
     borderRadius: 18,

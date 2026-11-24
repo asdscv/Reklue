@@ -7,6 +7,7 @@
     "title": "Today's Training",
     "desc": "{{count}} games · about {{minutes}} min",
     "start": "Start today's training",
+    "shuffle": "Shuffle games",
     "week": "This week {{done}}/{{goal}}",
     "weekDone": "Weekly goal reached",
     "course": "Core course {{done}}/{{total}}",

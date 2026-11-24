@@ -7,6 +7,7 @@
     "title": "今日训练",
     "desc": "{{count}}个游戏 · 约{{minutes}}分钟",
     "start": "开始今日训练",
+    "shuffle": "随机更换游戏",
     "week": "本周 {{done}}/{{goal}}次",
     "weekDone": "已达成本周目标",
     "course": "基础课程 {{done}}/{{total}}",

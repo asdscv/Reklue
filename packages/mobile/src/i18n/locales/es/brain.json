@@ -7,6 +7,7 @@
     "title": "Entrenamiento de hoy",
     "desc": "{{count}} juegos · unos {{minutes}} min",
     "start": "Empezar el entrenamiento de hoy",
+    "shuffle": "Cambiar juegos al azar",
     "week": "Esta semana {{done}}/{{goal}}",
     "weekDone": "Objetivo semanal cumplido",
     "course": "Curso básico {{done}}/{{total}}",
