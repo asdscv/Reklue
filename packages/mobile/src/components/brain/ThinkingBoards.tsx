@@ -142,9 +142,11 @@ export function CardRecallBoard({ view, onTap, width, height, demo, paused, them
   const { t } = useTranslation('brain')
   const { input, preview, rows, slots } = view
   const active = input?.active
+  const rank = input?.rank
   const compact = !!rows || view.hands.length > 1
+  const review = !input && !preview
   const cardWidth = Math.min(demo ? 48 : 68, Math.max(44, Math.floor((width - 24) / 5)))
-  const cardHeight = demo ? 46 : rows ? 46 : compact ? 48 : 66
+  const cardHeight = demo ? 46 : review ? (compact ? 57 : 80) : rows ? 46 : compact ? 50 : 66
   const cardFont = demo ? 16 : compact ? 18 : 24
   const columns = width >= (demo ? 220 : 332) ? 7 : 5
   const rankWidth = Math.floor((width - (columns - 1) * 4) / columns)
@@ -159,18 +161,23 @@ export function CardRecallBoard({ view, onTap, width, height, demo, paused, them
       {cards.map((slot) => {
         const suit = slot.suit && t(`play.cardRecallSuits.${slot.suit}`)
         const position = t('play.cardRecallPosition', { position: slot.index + 1 })
-        const verdict = slot.correct === undefined ? '' : t(slot.correct ? 'play.correct' : 'play.wrong')
-        const label = [position, slot.rank, suit, verdict].filter(Boolean).join(', ')
+        const verdict = slot.correct === undefined ? '' : t(slot.correct ? 'play.correct' : 'play.cardRecallWrong')
+        const guess = slot.guess
+        const guessLabel = guess === null ? t('play.cardRecallEmpty') : guess && t('play.cardRecallYourAnswer', { card: `${guess.rank} ${t(`play.cardRecallSuits.${guess.suit}`)}` })
+        const label = [position, slot.rank ?? t('play.cardRecallEmpty'), suit, verdict, guessLabel].filter(Boolean).join(', ')
         const red = slot.suit === 'hearts' || slot.suit === 'diamonds'
         const ink = slot.rank ? red ? '#A71D2A' : '#172033' : '#FFFFFFB3'
         return <Tap key={slot.index} index={slot.index} onTap={onTap} registerTarget={registerTarget} demo={demo}
           selected={input ? slot.active : undefined} disabled={!input || paused} label={label}
-          style={{ width: rows ? Math.floor((width - 16) / 5) : cardWidth, minHeight: cardHeight, paddingTop: rows ? 11 : 0, paddingHorizontal: compact ? 1 : 4, opacity: 1, borderColor: slot.active ? theme.accent : '#FFFFFF40', backgroundColor: slot.rank ? '#FFFDF9' : '#FFFFFF16' }}>
-          {rows && <Text style={{ position: 'absolute', top: 0, left: 4, color: ink, fontSize: 11 }} maxFontSizeMultiplier={1.2}>{slot.index + 1}</Text>}
+          style={{ width: rows ? Math.floor((width - 16) / 5) : cardWidth, minHeight: cardHeight, paddingTop: 11, paddingHorizontal: compact ? 1 : 4, opacity: 1, borderStyle: slot.rank || slot.active ? 'solid' : 'dashed', borderColor: slot.active ? theme.accent : '#FFFFFF40', backgroundColor: slot.rank ? '#FFFDF9' : slot.active ? '#FED7AA26' : '#FFFFFF0E' }}>
+          <Text style={{ position: 'absolute', top: 0, left: 4, color: ink, fontSize: 11 }} maxFontSizeMultiplier={1.2}>{slot.index + 1}</Text>
           <Text style={{ fontWeight: '700', textAlign: 'center', color: ink, fontSize: cardFont, lineHeight: cardFont + 1 }} numberOfLines={compact ? 1 : 2} adjustsFontSizeToFit={compact}>
-            {slot.rank ?? '?'}{slot.suit ? `${compact ? ' ' : '\n'}${POKER_SUITS[slot.suit]}` : ''}
+            {slot.rank ?? '—'}{slot.suit ? `${compact ? ' ' : '\n'}${POKER_SUITS[slot.suit]}` : ''}
           </Text>
           {slot.correct !== undefined && <Text style={{ position: 'absolute', top: 0, right: 3, color: slot.correct ? '#065F46' : '#991B1B', fontSize: 12 }}>{slot.correct ? '✓' : '×'}</Text>}
+          {guess && <Text style={{ color: '#334155', fontSize: 10 }} numberOfLines={1} adjustsFontSizeToFit>
+            {t('play.cardRecallYourAnswer', { card: guess.rank + POKER_SUITS[guess.suit] })}
+          </Text>}
         </Tap>
       })}
     </View>
@@ -191,16 +198,23 @@ export function CardRecallBoard({ view, onTap, width, height, demo, paused, them
       <Text style={[styles.buttonText, { fontSize: demo ? 14 : 19 }]}>{key.value}</Text>
     </Tap>)}
   </View>
-  const suits = input && <View style={{ flexDirection: 'row', gap: 4 }}>
-    {input.suits.map((key) => <Tap key={key.value} {...key} disabled={key.disabled || paused} onTap={onTap} demo={demo} registerTarget={registerTarget}
-      label={t(`play.cardRecallSuits.${key.value}`)} style={{ flex: 1, minHeight: actionHeight }}>{POKER_SUITS[key.value]}</Tap>)}
+  const suits = input && rank && <View style={{ flexDirection: 'row', gap: 4 }}>
+    {input.suits.map((key) => {
+      const name = t(`play.cardRecallSuits.${key.value}`)
+      const ink = key.value === 'hearts' || key.value === 'diamonds' ? '#A71D2A' : '#172033'
+      return <Tap key={key.value} {...key} disabled={key.disabled || paused} onTap={onTap} demo={demo} registerTarget={registerTarget}
+        label={`${rank} ${name}`} style={{ flex: 1, minHeight: actionHeight, paddingHorizontal: 1, backgroundColor: '#FFFDF9', borderColor: 'transparent' }}>
+        <Text style={{ fontSize: demo ? 16 : 20, lineHeight: demo ? 19 : 22, fontWeight: '700', color: ink }}>{rank}{POKER_SUITS[key.value]}</Text>
+        {!demo && <Text style={{ fontSize: 11, color: ink }} numberOfLines={1} adjustsFontSizeToFit>{name}</Text>}
+      </Tap>
+    })}
   </View>
 
   const next = !input && !preview && onSkipReveal && !demo && <Pressable accessibilityRole="button" accessibilityState={{ disabled: !!paused }}
     style={[styles.button, primary]} onPress={onSkipReveal} disabled={paused} testID="brain-card-continue">
     <Text style={primaryText}>{t('training.continue')}</Text>
   </Pressable>
-  const begin = preview && !demo && <Tap index={preview.index} disabled={paused} onTap={onTap} style={primary}>
+  const begin = preview && <Tap index={preview.index} disabled={paused} onTap={onTap} demo={demo} registerTarget={registerTarget} style={primary}>
     <Text style={primaryText}>{t('play.cardRecallStart')}</Text>
   </Tap>
   const bar = preview && <PreviewBar ms={preview.ms} paused={!!paused} width={width} />
@@ -215,7 +229,7 @@ export function CardRecallBoard({ view, onTap, width, height, demo, paused, them
 
   const rangeColumns = rows ? Math.max(1, Math.min(rows.length, Math.floor((width + 4) / 48))) : 1
   const rangeWidth = Math.floor((width - 4 * (rangeColumns - 1)) / rangeColumns)
-  const resetRank = rows ? input?.resetRank : undefined
+  const resetRank = input?.resetRank
   return <Frame width={width} height={height} demo={demo}>
     {bar}
     {rows && currentRow ? <>
@@ -230,20 +244,26 @@ export function CardRecallBoard({ view, onTap, width, height, demo, paused, them
     </> : table}
     {begin}
     {input && <>
-      {rows ? <View style={{ gap: 4, justifyContent: 'flex-end', minHeight: Math.ceil(input.ranks.length / columns) * (actionHeight + 4) - 4 }}>
+      <View style={{ gap: 4, justifyContent: 'flex-end', minHeight: Math.ceil(input.ranks.length / columns) * (actionHeight + 4) - 4 }}>
         {resetRank === undefined ? ranks : <>
           <Tap index={resetRank} onTap={onTap} demo={demo} disabled={paused} style={{ minHeight: actionHeight }}>
             <Text style={[styles.buttonText, { fontSize: 16 }]}>{t('play.cardRecallChangeRank')}</Text>
           </Tap>
           {suits}
         </>}
-      </View> : <>{ranks}{suits}</>}
-      <Tap index={input.submit.index} disabled={input.submit.disabled || paused} onTap={onTap} demo={demo} registerTarget={registerTarget}
-        style={input.submit.answered === slots.length ? primary : { minHeight: actionHeight }}>
-        <Text style={input.submit.answered === slots.length ? primaryText : [styles.buttonText, { fontSize: 16 }]}>
-          {rows ? t('play.cardRecallSubmit', { answered: input.submit.answered, total: slots.length }) : t('play.submit')}
-        </Text>
-      </Tap>
+      </View>
+      <View style={{ flexDirection: 'row', gap: 4 }}>
+        {input.skip !== undefined && <Tap index={input.skip} disabled={paused} onTap={onTap} demo={demo}
+          style={{ minHeight: actionHeight, paddingHorizontal: 12 }}>
+          <Text style={[styles.buttonText, { fontSize: demo ? 14 : 16 }]}>{t('play.cardRecallSkip')}</Text>
+        </Tap>}
+        <Tap index={input.submit.index} disabled={input.submit.disabled || paused} onTap={onTap} demo={demo} registerTarget={registerTarget}
+          style={{ flex: 1, ...(input.submit.answered === slots.length ? primary : { minHeight: actionHeight }) }}>
+          <Text style={input.submit.answered === slots.length ? primaryText : [styles.buttonText, { fontSize: demo ? 14 : 16 }]}>
+            {t('play.cardRecallSubmit', { answered: input.submit.answered, total: slots.length })}
+          </Text>
+        </Tap>
+      </View>
     </>}
     {next}
   </Frame>

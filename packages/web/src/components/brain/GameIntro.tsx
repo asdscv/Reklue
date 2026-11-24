@@ -112,6 +112,7 @@ export function GameIntro({
 
         <section className="mt-5 space-y-2" aria-labelledby="brain-howto">
           <h2 id="brain-howto" className="text-sm font-semibold uppercase tracking-wider text-white/70">{t('intro.howTo')}</h2>
+          {gameId === 'cardRecall' && <p className="text-sm leading-relaxed text-white/85">{t('intro.cardRecallTip')}</p>}
           <DemoPlayer gameId={gameId} width={width} />
         </section>
 

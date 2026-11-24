@@ -112,6 +112,7 @@ export function GameIntro({
               <Text style={styles.kicker} accessibilityRole="header" maxFontSizeMultiplier={1.4}>
                 {t('intro.howTo')}
               </Text>
+              {gameId === 'cardRecall' && <Text style={styles.note} maxFontSizeMultiplier={1.5}>{t('intro.cardRecallTip')}</Text>}
               {width !== null ? (
                 <DemoPlayer gameId={gameId} width={width} />
               ) : null}

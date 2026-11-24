@@ -36,7 +36,15 @@ interface State {
 
 const matches = (answer: PokerCard | null, card: PokerCard) => answer?.rank === card.rank && answer.suit === card.suit
 const score = (s: State) => s.cards.filter((card, i) => matches(s.answers[i], card)).length
-const canSubmit = (s: State, answered: number) => s.rank === null && (s.cards.length > SHOWDOWN_MAX ? answered > 0 : answered === s.cards.length)
+const canSubmit = (s: State, answered: number) => s.rank === null && answered > 0
+
+function nextBlank(answers: State['answers'], active: number): number | undefined {
+  for (let offset = 1; offset < answers.length; offset++) {
+    const index = (active + offset) % answers.length
+    if (answers[index] === null) return index
+  }
+  return undefined
+}
 
 export function growCardRecall(s: State, depth: number, rng: Rng): State {
   const extra = Math.floor((MAX_CARDS - s.cards.length) * depth + 1e-9)
@@ -77,9 +85,7 @@ export const cardRecall = {
     if (!suit || !s.rank) return s
     const answer = { rank: s.rank, suit }
     const answers = s.answers.map((previous, i) => i === active ? answer : previous)
-    const later = answers.findIndex((value, i) => i > active && value === null)
-    const next = later === -1 ? answers.indexOf(null) : later
-    return { ...s, answers, active: next === -1 ? null : next, rank: null }
+    return { ...s, answers, active: nextBlank(answers, active) ?? null, rank: null }
   },
   timeout: (s) => s.phase === 'done' ? s : { ...s, phase: 'done' },
   outcome(s) {
@@ -91,13 +97,16 @@ export const cardRecall = {
   view(s): CardRecallView {
     const recalling = s.phase === 'recall'
     const preview = s.phase === 'preview'
+    const done = s.phase === 'done'
     const total = s.cards.length
     const deckOrder = total > SHOWDOWN_MAX
     const answered = s.answers.filter(Boolean).length
     const prompt: PromptView = preview ? { key: 'play.cardRecallMemorize', params: { total } }
       : recalling ? s.active === null
         ? { key: 'play.cardRecallCheck' }
-        : { key: deckOrder ? s.rank ? 'play.cardRecallPickSuit' : 'play.cardRecallPickRank' : 'play.cardRecallEnter', params: { position: s.active + 1, total } }
+        : s.rank
+          ? { key: 'play.cardRecallPickSuit', params: { position: s.active + 1, rank: s.rank } }
+          : { key: 'play.cardRecallEnter', params: { position: s.active + 1 } }
         : { key: 'play.cardRecallResult', params: { correct: score(s), total } }
     const handCount = deckOrder ? 0 : Math.max(0, Math.floor((total - COMMUNITY_CARDS) / HAND_CARDS))
     return {
@@ -119,10 +128,13 @@ export const cardRecall = {
         const active = recalling && index === s.active
         const draft = active ? s.rank : null
         const shown = recalling ? s.answers[index] : card
-        return { index, rank: draft ?? shown?.rank, suit: draft ? undefined : shown?.suit, active, correct: s.phase === 'done' ? matches(s.answers[index], card) : undefined }
+        const correct = done ? matches(s.answers[index], card) : undefined
+        return { index, rank: draft ?? shown?.rank, suit: draft ? undefined : shown?.suit, active, correct, guess: correct === false ? s.answers[index] : undefined }
       }),
       input: recalling ? {
         active: s.active,
+        rank: s.rank,
+        skip: s.active === null ? undefined : nextBlank(s.answers, s.active),
         ranks: POKER_RANKS.map((value, i) => ({ value, index: RANK_START + i, disabled: s.active === null, selected: value === s.rank })),
         suits: suits.map((value, i) => ({ value, index: SUIT_START + i, disabled: !s.rank })),
         resetRank: s.rank ? RESET_RANK : undefined,

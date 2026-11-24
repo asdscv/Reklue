@@ -317,9 +317,11 @@ export interface CardRecallView {
   /** Longer sequences use numbered rows. Each row's tap selects its first unanswered position. */
   rows?: { start: number; end: number; target: number }[]
   preview?: { ms: number; index: number }
-  slots: { index: number; rank?: PokerRank; suit?: PokerSuit; active: boolean; correct?: boolean }[]
+  slots: { index: number; rank?: PokerRank; suit?: PokerSuit; active: boolean; correct?: boolean; guess?: PokerCard | null }[]
   input?: {
     active: number | null
+    rank: PokerRank | null
+    skip?: number
     ranks: { value: PokerRank; index: number; disabled: boolean; selected: boolean }[]
     suits: { value: PokerSuit; index: number; disabled: boolean }[]
     resetRank?: number

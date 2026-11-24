@@ -53,8 +53,15 @@ export function buildDemo(gameId: BrainGameId, ctx: Partial<CreateContext> = {})
     const view = def.view(s)
     const pending = def.pendingMs(s)
     if (pending !== null) {
-      frames.push({ view, holdMs: Math.min(pending, 1600) })
-      s = def.advance(s)
+      const holdMs = Math.min(pending, 1_600)
+      if (view.kind === 'cardRecall' && view.preview) {
+        frames.push({ view, holdMs, tap: view.preview.index })
+        s = def.tap(s, view.preview.index)
+        frames.push({ view: def.view(s), holdMs: LOOK_HOLD_MS })
+      } else {
+        frames.push({ view, holdMs })
+        s = def.advance(s)
+      }
       continue
     }
     const taps = def.solution(s)

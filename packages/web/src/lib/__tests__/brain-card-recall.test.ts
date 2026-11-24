@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { brainGame, createRng, DEFAULT_CONTEXT, POKER_RANKS, POKER_SUITS, type CardRecallView } from '@reklue/shared/lib/brain-games'
+import { brainGame, buildDemo, createRng, DEFAULT_CONTEXT, POKER_RANKS, POKER_SUITS, type CardRecallView } from '@reklue/shared/lib/brain-games'
 import { cardRecall } from '@reklue/shared/lib/brain-games/games/card-recall'
 
 describe('Playing Card Recall', () => {
@@ -41,7 +41,7 @@ describe('Playing Card Recall', () => {
       const hidden = cardRecall.view(cardRecall.advance(s))
       expect(hidden.slots.some((c) => c.rank || c.suit || c.correct !== undefined)).toBe(false)
       expect(hidden.input?.submit.disabled).toBe(true)
-      expect(hidden.prompt.params).toEqual({ position: 1, total: 13 })
+      expect(hidden.prompt.params).toEqual({ position: 1 })
       const indices = [...hidden.slots, ...hidden.input!.ranks, ...hidden.input!.suits, hidden.input!.submit].map((control) => control.index)
       expect(new Set(indices).size).toBe(indices.length)
     }
@@ -64,6 +64,7 @@ describe('Playing Card Recall', () => {
     expect(cardRecall.outcome(s)).toEqual({ correct: false, accuracy: 11 / 13 })
     expect(cardRecall.view(s).slots.map((c) => c.correct)).toEqual(expected.map((_, i) => i >= 2))
     expect(cardRecall.view(s).slots.map(({ rank, suit }) => ({ rank, suit }))).toEqual(expected.map(({ rank, suit }) => ({ rank, suit })))
+    expect(cardRecall.view(s).slots[0].guess).toEqual({ rank: expected[1].rank, suit: expected[1].suit })
   })
 
   it('starts recall early or on the timer, hiding 30 unique cards and keeping inputs distinct', () => {
@@ -102,7 +103,7 @@ describe('Playing Card Recall', () => {
     expect(view().prompt.key).toBe('play.cardRecallPickSuit')
     expect(view().input!.submit.disabled).toBe(true)
     tap(view().input!.resetRank!)
-    expect(view().prompt.key).toBe('play.cardRecallPickRank')
+    expect(view().prompt.key).toBe('play.cardRecallEnter')
     for (const step of def.solution(state)!) tap(step)
     expect(view().input!.active).toBe(26)
     expect(view().rows![5].target).toBe(26)
@@ -113,5 +114,30 @@ describe('Playing Card Recall', () => {
     expect(result.filter((slot) => slot.correct).map((slot) => slot.index)).toEqual([25])
     expect(result[25]).toMatchObject({ rank: expected[25].rank, suit: expected[25].suit })
     expect(view().prompt.params).toEqual({ correct: 1, total: 30 })
+  })
+
+  it('teaches the real cover, rank and suit actions in the two-card demo', () => {
+    const frames = buildDemo('cardRecall')
+    const start = frames[0].view as CardRecallView
+    expect(frames[0].tap).toBe(start.preview!.index)
+    expect(start.slots).toHaveLength(2)
+    expect(frames[1].view.prompt).toMatchObject({ key: 'play.cardRecallEnter', params: { position: 1 } })
+    expect(frames[3].view.prompt).toMatchObject({ key: 'play.cardRecallPickSuit', params: { position: 1, rank: start.slots[0].rank } })
+    expect(frames.at(-1)?.view.prompt).toMatchObject({ key: 'play.cardRecallResult', params: { correct: 2, total: 2 } })
+  })
+
+  it('leaves skipped slots empty and lets a beginner check one answer', () => {
+    let state = cardRecall.create(1, createRng(2))
+    const expected = cardRecall.view(state).slots
+    state = cardRecall.advance(state)
+    state = cardRecall.tap(state, cardRecall.view(state).input!.skip!)
+    expect(cardRecall.view(state).input!.active).toBe(1)
+    for (const step of cardRecall.solution(state)!) state = cardRecall.tap(state, step)
+    const entered = cardRecall.view(state)
+    expect(entered.input).toMatchObject({ active: 0, submit: { answered: 1, disabled: false } })
+    expect(entered.slots[0].rank).toBeUndefined()
+    state = cardRecall.tap(state, entered.input!.submit.index)
+    expect(cardRecall.view(state).slots[0]).toMatchObject({ rank: expected[0].rank, suit: expected[0].suit, guess: null })
+    expect(cardRecall.outcome(state)).toEqual({ correct: false, accuracy: 0.5 })
   })
 })
