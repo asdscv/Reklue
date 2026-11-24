@@ -5,6 +5,7 @@
 export interface WordCardFieldValues {
   readonly kind: "word";
   readonly front: string;
+  readonly reading?: string;
   readonly back: string;
   readonly example_front: string;
   readonly example_back: string;

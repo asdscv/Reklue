@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generate tiny STUDY_DATA fixtures for CI plan-validation.
-# Mirrors the real corpus layout (52 CSVs, three schemas) without needing the
-# gitignored full dataset. Each file gets exactly one data row.
+# Mirrors the legacy corpus with one row per CSV and includes the full
+# Japanese deck so CI checks every translation.
 set -euo pipefail
 
 OUT="${1:-/tmp/study_data_fixtures}"
@@ -66,10 +66,12 @@ emit_C "real-conversation-일상.csv"
 emit_C "real-conversation-학습.csv"
 emit_C "real-conversation-회사.csv"
 
-# Quick sanity: should be exactly 52 CSV files
+cp "$(dirname "$0")/../../STUDY_DATA/jlpt-n5-everyday-verbs.csv" "$OUT/"
+
+# Quick sanity: should be exactly 53 CSV files
 count=$(ls "$OUT"/*.csv | wc -l | tr -d ' ')
 echo "Generated $count CSV fixtures in $OUT"
-if [ "$count" != "52" ]; then
-  echo "ERROR: expected 52 fixtures, got $count" >&2
+if [ "$count" != "53" ]; then
+  echo "ERROR: expected 53 fixtures, got $count" >&2
   exit 1
 fi

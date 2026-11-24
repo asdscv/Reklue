@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   wordListPageLanguage, wordListHeading, wordListDescription, wordListCta, wordListHreflang, wordRows, wordListColumns,
+  wordListLanguageLinks, wordListTermLanguage,
   type ListingSeoInput,
 } from '@reklue/shared/lib/listing-seo'
 
@@ -27,6 +28,38 @@ describe('word-list page language', () => {
     expect(wordListPageLanguage(deck({ owner_is_official: false }))).toBeNull()
     expect(wordListPageLanguage(deck({ native_language: 'en' }))).toBeNull()
   })
+})
+
+it('links an English-language edition of the Japanese deck and shows Japanese readings', () => {
+  const japanese = deck({
+    id: 'n5-en',
+    title: 'JLPT N5 Basic Japanese Verbs (Japanese → English)',
+    category: 'beginner',
+    card_count: 60,
+    tags: ['source:ja', 'target:en', 'learning_language:ja', 'level:jlpt-n5-verbs'],
+    native_language: 'en',
+    siblings: [{ id: 'n5-ko', native_language: 'ko' }],
+    sample_fields: [{ field_values: {
+      front: '行く', reading: 'いく', back: 'to go',
+      example_front: '明日、学校へ行きます。', example_back: 'I’m going to school tomorrow.',
+    } }],
+  })
+  expect(wordListPageLanguage(japanese)).toBe('en')
+  expect(wordListTermLanguage(japanese)).toBe('ja')
+  expect(wordRows(japanese)[0]).toEqual({
+    term: '行く（いく）', meaning: 'to go',
+    example: '明日、学校へ行きます。', exampleNote: 'I’m going to school tomorrow.',
+  })
+  expect(wordListHreflang(japanese, 'https://x')).toEqual([
+    { lang: 'en', href: 'https://x/d/n5-en' },
+    { lang: 'ko', href: 'https://x/d/n5-ko' },
+  ])
+  expect(wordListLanguageLinks(japanese)).toEqual([{ id: 'n5-ko', lang: 'ko', label: '한국어' }])
+  expect(wordListCta(japanese, 'en')).toBe('Study all 60 cards for free')
+
+  const english = { ...japanese, tags: ['source:ja', 'target:en', 'learning_language:en'] }
+  expect(wordListTermLanguage(english)).toBe('en')
+  expect(wordRows(english)[0]?.term).toBe('to go')
 })
 
 describe('heading = the phrase people search for', () => {

@@ -19,6 +19,7 @@ import { isUiLocale } from '../../locale-policy.js'
 import {
   wordListPageLanguage, wordListHeading, wordListDescription, wordListIntro,
   wordListColumns, wordListCta, wordListHreflang, wordRows, wordListIndexLink,
+  wordListLanguageLinks, wordListTermLanguage,
 } from '../../../packages/shared/lib/listing-seo.ts'
 
 export async function handleListingBotRequest(listingId, url, env) {
@@ -124,15 +125,17 @@ function renderWordListPage(listing, listingId, lang) {
   const description = wordListDescription(listing, lang)
   const canonicalUrl = `${SITE_URL}/d/${listingId}`
   const rows = wordRows(listing)
+  const termLang = wordListTermLanguage(listing)
   const [termCol, meaningCol, exampleCol] = wordListColumns(lang, listing.category)
   const studyUrl = `${SITE_URL}/auth/login?redirect=${encodeURIComponent(`/marketplace/${listingId}`)}`
 
   const datasetJsonLd = { ...buildDatasetJsonLd(listing, listingId, lang), name: heading, description }
   const sampleResources = buildSampleCardLearningResources(listing.sample_fields, listingId, lang)
   if (sampleResources.length > 0) datasetJsonLd.hasPart = sampleResources
+  const index = wordListIndexLink(lang)
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: BRAND_NAME, url: SITE_URL },
-    { name: wordListIndexLink(lang).label, url: `${SITE_URL}${wordListIndexLink(lang).path}` },
+    { name: index.label, url: `${SITE_URL}${index.path}` },
     { name: heading, url: canonicalUrl },
   ])
 
@@ -153,20 +156,24 @@ function renderWordListPage(listing, listingId, lang) {
 ${hreflangTags}
 ${renderJsonLd([datasetJsonLd, breadcrumbJsonLd, buildOrganizationJsonLd()])}`
 
-  const tableRows = rows.map((r) => `<tr><td lang="en"><strong>${escapeHtml(r.term)}</strong></td><td>${escapeHtml(r.meaning)}</td><td>${r.example ? `<span lang="en">${escapeHtml(r.example)}</span>` : ''}${r.exampleNote ? `<br><small>${escapeHtml(r.exampleNote)}</small>` : ''}</td></tr>`).join('\n')
+  const tableRows = rows.map((r) => `<tr><td lang="${termLang}"><strong>${escapeHtml(r.term)}</strong></td><td>${escapeHtml(r.meaning)}</td><td>${r.example ? `<span lang="${termLang}">${escapeHtml(r.example)}</span>` : ''}${r.exampleNote ? `<br><small>${escapeHtml(r.exampleNote)}</small>` : ''}</td></tr>`).join('\n')
+  const languageLinks = wordListLanguageLinks(listing).map(({ id, lang: locale, label }) =>
+    `<li><a href="${SITE_URL}/d/${escapeHtml(id)}" hreflang="${locale}" lang="${locale}">${escapeHtml(label)}</a></li>`)
+  const studyLink = `<p><a href="${escapeHtml(studyUrl)}">${escapeHtml(wordListCta(listing, lang))}</a></p>`
 
-  const index = wordListIndexLink(lang)
   const body = `<nav aria-label="breadcrumb"><ol><li><a href="${SITE_URL}">${BRAND_NAME}</a></li><li><a href="${SITE_URL}${index.path}">${escapeHtml(index.label)}</a></li><li>${escapeHtml(heading)}</li></ol></nav>
 <main>
 <h1>${escapeHtml(heading)}</h1>
 <p>${escapeHtml(wordListIntro(listing, lang))}</p>
+${termLang === 'ja' ? studyLink : ''}
+${languageLinks.length > 0 ? `<ul>${languageLinks.join('')}</ul>` : ''}
 <table>
 <thead><tr><th>${escapeHtml(termCol)}</th><th>${escapeHtml(meaningCol)}</th><th>${escapeHtml(exampleCol)}</th></tr></thead>
 <tbody>
 ${tableRows}
 </tbody>
 </table>
-<p><a href="${escapeHtml(studyUrl)}">${escapeHtml(wordListCta(listing, lang))}</a></p>
+${studyLink}
 </main>
 <footer>
 <p><a href="${SITE_URL}/landing">← ${BRAND_NAME}</a></p>
