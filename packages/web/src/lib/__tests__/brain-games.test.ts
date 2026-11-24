@@ -335,8 +335,10 @@ describe('progress', () => {
     for (const g of BRAIN_GAMES) p = recordRound(p, g.id, { level: 123.45, correct: true, points: 99999 }, '2026-11-12')
     for (let i = 0; i < 20; i++) p = recordSession(p, 23, `2026-11-${String(10 + (i % 18)).padStart(2, '0')}`, null)
     p = { ...p, bestRuns: Object.fromEntries(BRAIN_GAMES.map((g) => [g.id, 123456])), practiced: BRAIN_GAMES.map((g) => g.id) }
+    p.games.cardRecall = { ...p.games.cardRecall!, bestLevel: 150 }
     const raw = serializeProgress(p)
     expect(parseProgress(raw)).toEqual(p)
+    expect(parseProgress(JSON.stringify(p))).toEqual(p)
     expect(raw.length).toBeLessThan(1800)
     expect(parseProgress('not json')).toEqual(emptyProgress())
     expect(parseProgress('{"v":2}')).toEqual(emptyProgress())

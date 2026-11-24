@@ -257,10 +257,10 @@ describe('reconcile and formats', () => {
     expect(r.push).toBe(false)
     expect(r.encoded.progress.placement).toEqual({ schulte: 4 })
     expect(r.encoded.meta.streakShield).toBe(2)
-    expect(isNewerFormat({ progress: { v: 4 }, history: { v: 3 }, meta: { v: 3 } })).toBe(true)
-    expect(isNewerFormat({ progress: { v: 3 }, history: { v: 3 }, meta: { v: 4 } })).toBe(true)
+    expect(isNewerFormat({ progress: { v: 5 }, history: { v: 4 }, meta: { v: 4 } })).toBe(true)
+    expect(isNewerFormat({ progress: { v: 4 }, history: { v: 4 }, meta: { v: 5 } })).toBe(true)
     expect(isNewerFormat({ progress: { v: 3 }, history: null, meta: undefined })).toBe(false)
-    // This app writes v3: a v1 copy (before the hard-content change) or a v2 one (before the thinking
+    // This app writes v4: a v1 copy (before the hard-content change) or a v2 one (before the thinking
     // games) is older, not newer.
     expect(isNewerFormat({ progress: { v: 1 }, history: { v: 1 }, meta: { v: 1 } })).toBe(false)
     expect(isNewerFormat({ progress: { v: 2 }, history: { v: 2 }, meta: { v: 2 } })).toBe(false)
@@ -588,7 +588,7 @@ describe('brain store cloud sync', () => {
 
   it('a newer-format cloud copy (an updated app on another device) is never merged or overwritten', async () => {
     const server = fakeServer()
-    const newer = { progress: { v: 4, games: {}, something: 'new' }, history: { v: 3, rounds: {} }, meta: { v: 3 }, rev: 7 }
+    const newer = { progress: { v: 5, games: {}, something: 'new' }, history: { v: 3, rounds: {} }, meta: { v: 3 }, rev: 7 }
     server.db.set('u1', clone(newer))
     const A = await device(server)
     A.store.getState().hydrate(A.storageFor('u1'))
@@ -606,8 +606,8 @@ describe('brain store cloud sync', () => {
     const A = await device(server)
     A.store.getState().hydrate(A.storageFor('u1'))
     await idle()
-    // Between this device's read and its write, a newer app writes meta v4: the conflict shows it.
-    server.db.set('u1', { progress: { v: 3 }, history: { v: 3, rounds: {} }, meta: { v: 4 }, rev: 1 })
+    // Between this device's read and its write, a newer app writes meta v5: the conflict shows it.
+    server.db.set('u1', { progress: { v: 3 }, history: { v: 3, rounds: {} }, meta: { v: 5 }, rev: 1 })
     A.store.getState().record('stroop', { level: 3, correct: true, points: 1 })
     await A.flush()
     expect(A.store.getState().cloudStatus).toBe('outdated')
@@ -615,7 +615,7 @@ describe('brain store cloud sync', () => {
     A.store.getState().record('stroop', { level: 3.1, correct: true, points: 1 })
     await vi.advanceTimersByTimeAsync(10_000)
     expect(server.state.pushes).toBe(pushes)
-    expect((server.db.get('u1')!.meta as { v: number }).v).toBe(4)
+    expect((server.db.get('u1')!.meta as { v: number }).v).toBe(5)
 
     // The server's own refusal (client_outdated) stops it the same way.
     const other = fakeServer()
@@ -650,7 +650,7 @@ describe('brain store cloud sync', () => {
     expect(A.store.getState().meta.sk.math).toEqual({ mu: migrateLevelV1('math', 10.5), sd: 9, n: 0, day: 1000 })
     expect(A.store.getState().cloudStatus).toBe('synced')
     const row = server.db.get('u1')!
-    expect([ver(row.progress), ver(row.history), ver(row.meta)]).toEqual([3, 3, 3])
+    expect([ver(row.progress), ver(row.history), ver(row.meta)]).toEqual([4, 4, 4])
     // Converted exactly once: the cloud holds the same v2 levels as the device.
     expect(level(row.progress as BrainProgress, 'math')).toBeCloseTo(once)
     expect((row.meta as BrainMeta).sk.math?.mu).toBeCloseTo(migrateLevelV1('math', 10.5))
@@ -669,6 +669,10 @@ describe('brain store cloud sync', () => {
     const v2 = (doc: object) => ({ ...clone(doc), v: 2 })
     const older = await server.connect({ uid: 'u1' }).cloud.push({ userId: 'u1', baseRev: row.rev, progress: v2(row.progress as object), history: v2(row.history as object), meta: v2(row.meta as object) })
     expect(older).toMatchObject({ ok: true, status: 'client_outdated' })
+    expect(server.db.get('u1')!.rev).toBe(row.rev)
+    const v3 = (doc: object) => ({ ...clone(doc), v: 3 })
+    const previous = await server.connect({ uid: 'u1' }).cloud.push({ userId: 'u1', baseRev: row.rev, progress: v3(row.progress as object), history: v3(row.history as object), meta: v3(row.meta as object) })
+    expect(previous).toMatchObject({ ok: true, status: 'client_outdated' })
     expect(server.db.get('u1')!.rev).toBe(row.rev)
   })
 

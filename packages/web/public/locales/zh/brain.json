@@ -113,6 +113,10 @@
       "name": "凑数字",
       "desc": "将所有数字各用一次，算出目标数。"
     },
+    "cardRecall": {
+      "name": "扑克牌记忆",
+      "desc": "按位置记住每张牌的点数和花色。难度提高后，需要在更短时间内记住五张公共牌和两张底牌。"
+    },
     "mazeRun": {
       "name": "走迷宫",
       "desc": "沿通道画线走到旗帜，遇到死路可以退回。"
@@ -247,7 +251,7 @@
     "makeTries_other": "剩{{count}}次",
     "makeExpression": "当前算式",
     "makeSignSlot": "运算符空格 {{position}}",
-    "makeValue": "这个算式等于{{value}}，请修改。",
+    "makeValue": "计算结果 {{value}}",
     "mazeRunGo": "沿通道画线走到旗帜",
     "mazeRunKeys_one": "按编号顺序收集{{count}}把钥匙，再到旗帜处",
     "mazeRunKeys_other": "按编号顺序收集{{count}}把钥匙，再到旗帜处",
@@ -262,7 +266,23 @@
     "mazeKey_other": "第{{count}}把钥匙",
     "memorizeNumbers": "记住数字位置 · 1到{{max}}",
     "memoryBadge": "翻牌记忆",
-    "makeSquare": "将最后一个数平方",
+    "makeSquare": "将 {{number}} 平方",
+    "makeSquareButton": "平方 x²",
+    "makeSquareHint": "点按要平方的数字。点按已平方的数字可取消。",
+    "makeAnswer": "正确算式示例",
+    "cardRecallMemorize": "记住每张牌及其位置",
+    "cardRecallEnter": "为每张牌先选点数，再选花色",
+    "cardRecallCheck": "点按牌面进行修改，或确认答案",
+    "cardRecallResult": "{{total}} 张牌答对 {{correct}} 张",
+    "cardRecallCommunity": "公共牌",
+    "cardRecallPrivate": "底牌",
+    "cardRecallPosition": "第 {{position}} 张牌",
+    "cardRecallSuits": {
+      "spades": "黑桃",
+      "hearts": "红桃",
+      "clubs": "梅花",
+      "diamonds": "方块"
+    },
     "difficulty": {
       "foundation": "轻松起步 · 无时间限制",
       "extreme": "极限难度"
@@ -654,7 +674,7 @@
       },
       "square": {
         "title": "也可以使用平方",
-        "body": "在数字后按²，将这个数乘以自身：3² = 9。每个数字只能平方一次。先算平方，再算×和÷，最后算+和−。每种新运算先使用较少的数字，再逐渐增加。"
+        "body": "平方就是把一个数乘以它自己，例如 3² = 3 × 3 = 9。先点按“平方”，再选一个数字。要取消平方，点按“平方”后再选同一个数字。先算平方，再算乘除。"
       }
     },
     "mazeRun": {

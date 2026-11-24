@@ -42,7 +42,7 @@ export const DECK_BOOST = 2
 
 const SITE = {
   name: 'Reklue',
-  what_it_is: 'A flashcard app with spaced repetition for memorizing: exam preparation (TOEIC, IELTS, TOEFL, JLPT, HSK, TOPIK, SAT, 수능, professional certifications), vocabulary and language learning. It also offers 12 adaptive brain games for puzzle practice (Odd One Out, Number Hunt, memory grids, sequences, number patterns, matching cards, colour words, arithmetic, Set Match, Bulls and Cows, make-a-number puzzles and mazes). Its website publishes practical study and game guides, without medical or IQ claims.',
+  what_it_is: 'A flashcard app with spaced repetition for memorizing: exam preparation (TOEIC, IELTS, TOEFL, JLPT, HSK, TOPIK, SAT, 수능, professional certifications), vocabulary and language learning. It also offers 13 adaptive brain games for puzzle practice (Odd One Out, Number Hunt, memory grids, sequences, number patterns, matching cards, colour words, arithmetic, Set Match, Bulls and Cows, make-a-number puzzles, mazes and playing card recall). Its website publishes practical study and game guides, without medical or IQ claims.',
 }
 
 export function normalizeQuery(q) {

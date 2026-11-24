@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Flag, KeyRound, Undo2 } from 'lucide-react'
-import { MAZE_WALL, SET_COLORS, type CodeBreakView, type MakeNumberView, type MazeView, type SetCard, type SetMatchView } from '@reklue/shared/lib/brain-games'
+import { MAZE_WALL, POKER_SUITS, SET_COLORS, type CardRecallView, type CodeBreakView, type MakeNumberView, type MazeView, type SetCard, type SetMatchView } from '@reklue/shared/lib/brain-games'
 import { mazeDragCells, mazePoint, type MazePoint } from '@reklue/shared/lib/brain-games/maze-drag'
 import type { BoardProps } from './BrainBoard'
 import { boardHeight } from './brain-ui'
@@ -82,7 +82,7 @@ export function CodeBreakBoard({ view, onTap, width, demo }: Props<CodeBreakView
   </div>
 }
 
-export function MakeNumberBoard({ view, onTap, width, demo }: Props<MakeNumberView>) {
+export function MakeNumberBoard({ view, onTap, width, demo, onSkip }: Props<MakeNumberView>) {
   const { t } = useTranslation('brain')
   return <div style={{ width }} className="space-y-3" data-testid="brain-make-number">
     <p className="text-center text-white/85" style={{ fontSize: demo ? 12 : 16 }}>
@@ -96,12 +96,27 @@ export function MakeNumberBoard({ view, onTap, width, demo }: Props<MakeNumberVi
       <span className="sr-only" aria-live="polite" aria-atomic="true">{view.equation.map((part) => part.text).join(' ')}</span>
       {view.equation.map((part, i) => part.control ?
         <Tap key={`control-${part.index}`} {...part} onTap={onTap} demo={demo}
-          label={part.control === 'sign' ? `${t('play.makeSignSlot', { position: part.position })} ${part.text}` : `${part.text} ${t('play.makeSquare')}`}
-          style={{ minHeight: demo ? 24 : 44, minWidth: demo ? 24 : 44, paddingInline: 4, ...(part.selected ? { borderColor: '#C7D2FE', background: '#454884' } : {}) }}>{part.text}</Tap>
+          label={part.control === 'sign' ? `${t('play.makeSignSlot', { position: part.position })} ${part.text}` : t('play.makeSquare', { number: part.value })}
+          style={{
+            minHeight: demo ? 24 : 44, minWidth: demo ? 24 : 44, paddingInline: 4, fontSize: demo ? 16 : 28,
+            ...(part.control === 'square' ? { opacity: 1, borderColor: 'transparent', background: 'transparent' } : {}),
+            ...(part.selected || (part.control === 'square' && !part.disabled) ? { borderColor: '#C7D2FE', background: '#454884' } : {}),
+          }}>{part.text}</Tap>
         : <span key={`text-${i}`} className="whitespace-nowrap">{part.text}</span>)}
     </div>
+    {view.lastValue !== undefined && <p className="text-center text-white" role="status">{t('play.makeValue', { value: view.lastValue })}</p>}
+    {view.reveal ? <div className="space-y-3 text-center">
+      <div className="rounded-xl bg-black/25 p-3 text-white" role="status">
+        <p className="text-sm text-white/85">{t('play.makeAnswer')}</p>
+        <p className="text-xl font-semibold">{view.reveal.lines.join(' · ')}</p>
+      </div>
+      {!demo && onSkip && <button type="button" className={`${buttonClass} min-h-12 w-full`} onClick={onSkip}>{t('training.continue')}</button>}
+    </div> : <>
+    {view.square && <div className="flex justify-center">
+      <Tap {...view.square} onTap={onTap} demo={demo} style={{ minHeight: demo ? 28 : 44, paddingInline: 16, ...(view.square.selected ? { borderColor: '#C7D2FE', background: '#454884' } : {}) }}>{t('play.makeSquareButton')}</Tap>
+    </div>}
     <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(4, view.ops.length)}, 1fr)` }}>
-      {view.ops.map((o) => <Tap key={o.op} {...o} label={o.op === '²' ? t('play.makeSquare') : o.op} onTap={onTap} demo={demo} disabled={o.disabled || view.locked}
+      {view.ops.map((o) => <Tap key={o.op} {...o} onTap={onTap} demo={demo} disabled={o.disabled || view.locked}
         style={o.selected ? { borderColor: '#C7D2FE', background: '#454884' } : undefined}>{o.op}</Tap>)}
     </div>
     <div className="grid grid-cols-3 gap-2">
@@ -109,8 +124,54 @@ export function MakeNumberBoard({ view, onTap, width, demo }: Props<MakeNumberVi
       <Tap {...view.clear} onTap={onTap} demo={demo}>{t('play.clear')}</Tap>
       <Tap {...view.submit} onTap={onTap} demo={demo}>{t('play.submit')}</Tap>
     </div>
-    {view.lastValue !== undefined && <p className="text-center text-white" role="status">{t('play.makeValue', { value: view.lastValue })}</p>}
-    {view.reveal && <p className="text-center text-white text-xl" role="status">{view.reveal.lines.join(' · ')}</p>}
+    </>}
+  </div>
+}
+
+export function CardRecallBoard({ view, onTap, width, demo, paused, theme }: Props<CardRecallView>) {
+  const { t } = useTranslation('brain')
+  const cardWidth = Math.min(demo ? 48 : 68, Math.max(44, Math.floor((width - 24) / 5)))
+  const columns = Math.min(7, Math.max(1, Math.floor((width + 4) / (demo ? 32 : 48))))
+  const group = (slots: CardRecallView['slots'], title?: string) => <div className="space-y-1">
+    {title && <p className="text-center text-sm font-semibold text-white/85">{title}</p>}
+    <div className="flex flex-wrap justify-center gap-1.5">
+      {slots.map((slot) => {
+        const suit = slot.suit && t(`play.cardRecallSuits.${slot.suit}`)
+        const position = t('play.cardRecallPosition', { position: slot.index + 1 })
+        const verdict = slot.correct === undefined ? '' : t(slot.correct ? 'play.correct' : 'play.wrong')
+        const label = [position, slot.rank, suit, verdict].filter(Boolean).join(', ')
+        const red = slot.suit === 'hearts' || slot.suit === 'diamonds'
+        return <Tap key={slot.index} index={slot.index} onTap={onTap} demo={demo} disabled={!view.input} selected={view.input ? slot.active : undefined} label={label}
+          style={{ width: cardWidth, minHeight: demo ? 46 : 66, padding: 0, opacity: 1, borderColor: slot.active ? theme.accent : '#FFFFFF40', background: slot.rank ? '#FFFDF9' : '#FFFFFF16', color: slot.rank ? red ? '#A71D2A' : '#172033' : '#FFFFFFB3', outline: slot.active ? `2px solid ${theme.accent}` : undefined }}>
+          <span className="relative flex flex-col items-center justify-center leading-none" aria-hidden="true" style={{ fontSize: demo ? 16 : 24 }}>
+            {slot.rank ?? '?'}
+            {slot.suit && <span>{POKER_SUITS[slot.suit]}</span>}
+            {slot.correct !== undefined && <span className="absolute -right-3 -top-1 text-xs text-slate-800">{slot.correct ? '✓' : '×'}</span>}
+          </span>
+        </Tap>
+      })}
+    </div>
+  </div>
+  const publicCount = view.slots.length - view.privateCount
+  return <div style={{ width }} className={demo ? 'space-y-1' : 'space-y-3'} data-testid="brain-card-recall">
+    {group(view.slots.slice(0, publicCount), view.privateCount ? t('play.cardRecallCommunity') : undefined)}
+    {view.privateCount > 0 && group(view.slots.slice(publicCount), t('play.cardRecallPrivate'))}
+    {view.previewMs && <PreviewBar ms={view.previewMs} paused={paused} />}
+    {view.input && <>
+      <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+        {view.input.ranks.map((key) => <Tap key={key.value} {...key} onTap={onTap} demo={demo} style={{ minHeight: demo ? 28 : 44, fontSize: demo ? 14 : 19, borderColor: key.selected ? theme.accent : undefined }}>{key.value}</Tap>)}
+      </div>
+      <div className="grid grid-cols-4 gap-1">
+        {view.input.suits.map((key) => <Tap key={key.value} {...key} onTap={onTap} demo={demo} label={t(`play.cardRecallSuits.${key.value}`)} style={{ minHeight: demo ? 28 : 44, fontSize: demo ? 17 : 24 }}>{POKER_SUITS[key.value]}</Tap>)}
+      </div>
+      <Tap {...view.input.submit} onTap={onTap} demo={demo} style={{ width: '100%', minHeight: demo ? 28 : 44 }}>{t('play.submit')}</Tap>
+    </>}
+  </div>
+}
+
+function PreviewBar({ ms, paused }: { ms: number; paused?: boolean }) {
+  return <div className="h-2 w-full rounded-full bg-white/15 overflow-hidden" aria-hidden="true">
+    <div className="h-full bg-sky-300 origin-left" style={{ animation: `brain-preview-drain ${ms}ms linear both`, animationPlayState: paused ? 'paused' : 'running' }} />
   </div>
 }
 
@@ -169,6 +230,6 @@ export function MazeBoard({ view, onTap, width, maxHeight, demo, paused }: Props
         })}
       </div>
     </div>
-    {view.showBar && <div key={`${view.cols}-${view.rows}-${view.showBar.ms}`} className="h-2 w-full rounded-full bg-white/15 overflow-hidden"><div className="h-full bg-sky-300 origin-left" style={{ animation: `brain-maze-drain ${view.showBar.ms}ms linear both`, animationPlayState: paused ? 'paused' : 'running' }} /></div>}
+    {view.showBar && <PreviewBar key={`${view.cols}-${view.rows}-${view.showBar.ms}`} ms={view.showBar.ms} paused={paused} />}
   </div>
 }

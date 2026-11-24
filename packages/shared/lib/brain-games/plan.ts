@@ -48,7 +48,7 @@ const LENGTHS = {
  * Games whose single trial is long (a whole board or puzzle): they need a bigger slot to be worth
  * starting. Code Break (a whole code), Make the Number and Maze Run run 20 s to a few minutes a trial.
  */
-const SLOW: readonly BrainGameId[] = ['schulte', 'pairs', 'codeBreak', 'makeNumber', 'mazeRun']
+const SLOW: readonly BrainGameId[] = ['schulte', 'pairs', 'codeBreak', 'makeNumber', 'mazeRun', 'cardRecall']
 const FOCI: readonly SessionFocus[] = ['mixed', 'mixed', 'speed', 'memory', 'thinking']
 const FOCUS_SKILLS: Record<Exclude<SessionFocus, 'mixed'>, readonly string[]> = {
   speed: ['speed', 'attention'],

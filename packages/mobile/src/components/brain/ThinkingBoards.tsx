@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Feather } from '@expo/vector-icons'
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
-import { MAZE_WALL, SET_COLORS, type CodeBreakView, type MakeNumberView, type MazeView, type SetCard, type SetMatchView } from '@reklue/shared/lib/brain-games'
+import { MAZE_WALL, POKER_SUITS, SET_COLORS, type CardRecallView, type CodeBreakView, type MakeNumberView, type MazeView, type SetCard, type SetMatchView } from '@reklue/shared/lib/brain-games'
 import { mazeDragCells, mazePoint } from '@reklue/shared/lib/brain-games/maze-drag'
 import type { BoardProps } from './BrainBoard'
 import { useDrain } from './motion'
@@ -90,7 +90,7 @@ export function CodeBreakBoard({ view, onTap, width, height, demo, registerTarge
   </Frame>
 }
 
-export function MakeNumberBoard({ view, onTap, width, height, demo, registerTarget }: Props<MakeNumberView>) {
+export function MakeNumberBoard({ view, onTap, width, height, demo, registerTarget, onSkipReveal }: Props<MakeNumberView>) {
   const { t } = useTranslation('brain')
   return <Frame width={width} height={height} demo={demo}>
     <Text style={[styles.hint, { fontSize: demo ? 12 : 16 }]}>
@@ -102,12 +102,31 @@ export function MakeNumberBoard({ view, onTap, width, height, demo, registerTarg
     <View style={styles.equation} accessibilityLiveRegion="polite" testID={demo ? undefined : 'brain-make-equation'}>
       {view.equation.map((part, i) => part.control ?
         <Tap key={`control-${part.index}`} {...part} onTap={onTap} demo={demo} registerTarget={registerTarget}
-          label={part.control === 'sign' ? `${t('play.makeSignSlot', { position: part.position })} ${part.text}` : `${part.text} ${t('play.makeSquare')}`}
-          style={{ minHeight: demo ? 24 : 44, minWidth: demo ? 24 : 44, ...(part.selected ? { borderColor: '#C7D2FE', backgroundColor: '#454884' } : {}) }}>{part.text}</Tap>
+          label={part.control === 'sign' ? `${t('play.makeSignSlot', { position: part.position })} ${part.text}` : t('play.makeSquare', { number: part.value })}
+          style={{
+            minHeight: demo ? 24 : 44, minWidth: demo ? 24 : 44,
+            ...(part.control === 'square' ? { opacity: 1, borderColor: 'transparent', backgroundColor: 'transparent' } : {}),
+            ...(part.selected || (part.control === 'square' && !part.disabled) ? { borderColor: '#C7D2FE', backgroundColor: '#454884' } : {}),
+          }}>
+          <Text style={[styles.buttonText, { fontSize: demo ? 16 : 28 }]}>{part.text}</Text>
+        </Tap>
         : <Text key={`text-${i}`} style={[styles.buttonText, { fontSize: demo ? 18 : 28 }]}>{part.text}</Text>)}
     </View>
+    {view.lastValue !== undefined && <Text style={styles.hint} accessibilityLiveRegion="polite">{t('play.makeValue', { value: view.lastValue })}</Text>}
+    {view.reveal ? <View style={{ gap: 10 }}>
+      <View style={styles.equation} accessibilityLiveRegion="polite">
+        <Text style={[styles.hint, { fontSize: 14, width: '100%' }]}>{t('play.makeAnswer')}</Text>
+        <Text style={[styles.buttonText, { fontSize: 22 }]}>{view.reveal.lines.join(' · ')}</Text>
+      </View>
+      {!demo && onSkipReveal && <Pressable accessibilityRole="button" style={[styles.button, { minHeight: 48 }]} onPress={onSkipReveal}>
+        <Text style={[styles.buttonText, { fontSize: 18 }]}>{t('training.continue')}</Text>
+      </Pressable>}
+    </View> : <>
+    {view.square && <View style={{ alignItems: 'center' }}>
+      <Tap {...view.square} onTap={onTap} demo={demo} registerTarget={registerTarget} style={{ minHeight: demo ? 28 : 44, paddingHorizontal: 16, ...(view.square.selected ? { borderColor: '#C7D2FE', backgroundColor: '#454884' } : {}) }}>{t('play.makeSquareButton')}</Tap>
+    </View>}
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-      {view.ops.map((o) => <Tap key={o.op} {...o} label={o.op === '²' ? t('play.makeSquare') : o.op} disabled={o.disabled || view.locked} onTap={onTap} demo={demo} registerTarget={registerTarget}
+      {view.ops.map((o) => <Tap key={o.op} {...o} disabled={o.disabled || view.locked} onTap={onTap} demo={demo} registerTarget={registerTarget}
         style={{ width: (width - (Math.min(4, view.ops.length) - 1) * 8) / Math.min(4, view.ops.length), ...(o.selected ? { borderColor: '#C7D2FE', backgroundColor: '#454884' } : {}) }}>{o.op}</Tap>)}
     </View>
     <View style={styles.row}>
@@ -115,8 +134,53 @@ export function MakeNumberBoard({ view, onTap, width, height, demo, registerTarg
       <Tap {...view.clear} onTap={onTap} demo={demo} registerTarget={registerTarget} style={styles.flex}>{t('play.clear')}</Tap>
       <Tap {...view.submit} onTap={onTap} demo={demo} registerTarget={registerTarget} style={styles.flex}>{t('play.submit')}</Tap>
     </View>
-    {view.lastValue !== undefined && <Text style={styles.hint} accessibilityLiveRegion="polite">{t('play.makeValue', { value: view.lastValue })}</Text>}
-    {view.reveal && <Text style={styles.hint}>{view.reveal.lines.join(' · ')}</Text>}
+    </>}
+  </Frame>
+}
+
+export function CardRecallBoard({ view, onTap, width, height, demo, paused, theme, registerTarget }: Props<CardRecallView>) {
+  const { t } = useTranslation('brain')
+  const cardWidth = Math.min(demo ? 48 : 68, Math.max(44, Math.floor((width - 24) / 5)))
+  const columns = Math.min(7, Math.max(1, Math.floor((width + 4) / (demo ? 32 : 48))))
+  const rankWidth = Math.floor((width - (columns - 1) * 4) / columns)
+  const group = (slots: CardRecallView['slots'], title?: string) => <View style={{ gap: 4 }}>
+    {title && <Text style={[styles.hint, { fontSize: 14 }]}>{title}</Text>}
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}>
+      {slots.map((slot) => {
+        const suit = slot.suit && t(`play.cardRecallSuits.${slot.suit}`)
+        const position = t('play.cardRecallPosition', { position: slot.index + 1 })
+        const verdict = slot.correct === undefined ? '' : t(slot.correct ? 'play.correct' : 'play.wrong')
+        const label = [position, slot.rank, suit, verdict].filter(Boolean).join(', ')
+        const red = slot.suit === 'hearts' || slot.suit === 'diamonds'
+        const ink = slot.rank ? red ? '#A71D2A' : '#172033' : '#FFFFFFB3'
+        return <Tap key={slot.index} index={slot.index} onTap={onTap} registerTarget={registerTarget} demo={demo} selected={view.input ? slot.active : undefined} disabled={!view.input} label={label}
+          style={{ width: cardWidth, minHeight: demo ? 46 : 66, opacity: 1, borderColor: slot.active ? theme.accent : '#FFFFFF40', backgroundColor: slot.rank ? '#FFFDF9' : '#FFFFFF16' }}>
+          <Text style={{ fontWeight: '700', textAlign: 'center', color: ink, fontSize: demo ? 16 : 24, lineHeight: demo ? 17 : 24 }}>
+            {slot.rank ?? '?'}{slot.suit ? `\n${POKER_SUITS[slot.suit]}` : ''}
+          </Text>
+          {slot.correct !== undefined && <Text style={{ position: 'absolute', top: 2, right: 3, color: '#172033', fontSize: 12 }}>{slot.correct ? '✓' : '×'}</Text>}
+        </Tap>
+      })}
+    </View>
+  </View>
+  const publicCount = view.slots.length - view.privateCount
+  return <Frame width={width} height={height} demo={demo}>
+    {group(view.slots.slice(0, publicCount), view.privateCount ? t('play.cardRecallCommunity') : undefined)}
+    {view.privateCount > 0 && group(view.slots.slice(publicCount), t('play.cardRecallPrivate'))}
+    {view.previewMs && <PreviewBar ms={view.previewMs} paused={!!paused} width={width} />}
+    {view.input && <>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4 }}>
+        {view.input.ranks.map((key) => <Tap key={key.value} {...key} onTap={onTap} demo={demo} registerTarget={registerTarget}
+          style={{ width: rankWidth, minHeight: demo ? 28 : 44, borderColor: key.selected ? theme.accent : '#FFFFFF40' }}>
+          <Text style={[styles.buttonText, { fontSize: demo ? 14 : 19 }]}>{key.value}</Text>
+        </Tap>)}
+      </View>
+      <View style={{ flexDirection: 'row', gap: 4 }}>
+        {view.input.suits.map((key) => <Tap key={key.value} {...key} onTap={onTap} demo={demo} registerTarget={registerTarget} label={t(`play.cardRecallSuits.${key.value}`)}
+          style={{ flex: 1, minHeight: demo ? 28 : 44 }}>{POKER_SUITS[key.value]}</Tap>)}
+      </View>
+      <Tap {...view.input.submit} onTap={onTap} demo={demo} registerTarget={registerTarget} style={{ minHeight: demo ? 28 : 44 }}>{t('play.submit')}</Tap>
+    </>}
   </Frame>
 }
 

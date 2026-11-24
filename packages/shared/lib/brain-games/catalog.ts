@@ -46,7 +46,7 @@ export const BRAIN_GAMES: readonly BrainGameEntry[] = [
   { id: 'math', skill: 'speed', group: 'speed', role: 'variety', icon: 'plus-circle', def: DIFFICULTY_GAMES.math },
   // The thinking games (owner 2026-11-13). All on the 85% staircase: each level is a harder board
   // (more cards, digits, tiles or cells, or less time), so the speed group's rule fits; none is a
-  // span task. Skills (the hub label and the day's focus) spread the twelve games three a skill: Set
+  // span task. Skills (the hub label and the day's focus) spread the games by how they play. Set
   // Match is card-by-card comparison (주의), Make the Number arithmetic reasoning (추리). A Code Break
   // trial is a whole puzzle (a minute or more): Match Pairs' doubled steps, so a round moves in fewer
   // trials (target unchanged), and a round is five codes, not twenty (`roundCap`).
@@ -54,6 +54,7 @@ export const BRAIN_GAMES: readonly BrainGameEntry[] = [
   { id: 'codeBreak', skill: 'reasoning', group: 'speed', role: 'reasoning', icon: 'lock', steps: { scale: 2, kMax: 1.5 }, roundCap: CODE_BREAK_ROUND_CAP, def: DIFFICULTY_GAMES.codeBreak },
   { id: 'makeNumber', skill: 'reasoning', group: 'speed', role: 'reasoning', icon: 'target', def: DIFFICULTY_GAMES.makeNumber },
   { id: 'mazeRun', skill: 'attention', group: 'speed', role: 'variety', icon: 'compass', def: DIFFICULTY_GAMES.mazeRun },
+  { id: 'cardRecall', skill: 'memory', group: 'speed', role: 'span', icon: 'heart', roundCap: 8, def: DIFFICULTY_GAMES.cardRecall },
 ]
 
 export function brainGame(id: BrainGameId): BrainGameEntry {

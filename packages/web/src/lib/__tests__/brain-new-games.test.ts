@@ -133,11 +133,10 @@ describe('the catalogue entries', () => {
       ['makeNumber', 'reasoning', 'speed', 'reasoning', 'target'],
       ['mazeRun', 'attention', 'speed', 'variety', 'compass'],
     ])
-    // Twelve games, three a skill (the hub label and the day's focus stay balanced).
     const bySkill: Record<string, number> = {}
     for (const g of BRAIN_GAMES) bySkill[g.skill] = (bySkill[g.skill] ?? 0) + 1
-    expect(BRAIN_GAMES).toHaveLength(12)
-    expect(bySkill).toEqual({ speed: 3, memory: 3, attention: 3, reasoning: 3 })
+    expect(BRAIN_GAMES).toHaveLength(13)
+    expect(bySkill).toEqual({ speed: 3, memory: 4, attention: 3, reasoning: 3 })
     // A Code Break trial is a whole code: doubled steps, as Match Pairs.
     expect(brainGame('codeBreak').steps).toEqual({ scale: 2, kMax: 1.5 })
     expect(new Set(BRAIN_GAMES.map((g) => g.icon)).size).toBe(BRAIN_GAMES.length)
@@ -501,13 +500,14 @@ describe('Make the Number (숫자 만들기)', () => {
         if (row.target24) expect(s.target, at).toBe(24)
         expect(v.ops.map((x) => x.op).includes('×'), at).toBe(row.times)
         expect(v.ops.map((x) => x.op).includes('÷'), at).toBe(row.divide)
-        expect(v.ops.map((x) => x.op).includes('²'), at).toBe(row.square)
+        expect(Boolean(v.square), at).toBe(row.square)
         expect(v.ops.map((x) => x.op).includes('('), at).toBe(row.brackets)
         if (row.need === '×') expect(s.witness.some((t) => t.kind === 'op' && t.op === '×'), at).toBe(true)
         if (row.need === '÷') expect(s.witness.some((t) => t.kind === 'op' && t.op === '÷'), at).toBe(true)
         if (row.need === '()') expect(s.witness.some((t) => t.kind === 'op' && t.op === '('), at).toBe(true)
         const indices = [...v.tiles.map((t) => t.index), ...v.ops.map((x) => x.index), v.undo.index, v.clear.index, v.submit.index,
-          ...v.equation.flatMap((part) => part.control === 'sign' ? [part.index] : [])]
+          ...(v.square ? [v.square.index] : []),
+          ...v.equation.flatMap((part) => part.control ? [part.index] : [])]
         expect(new Set(indices).size, `${at}: indices collide`).toBe(indices.length)
         const equation = `${v.order === 'fixed' ? s.tiles.join(' □ ') : '…'} = ${s.target}`
         expect(v.equation.map((part) => part.text).join(' '), at).toBe(equation)

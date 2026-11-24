@@ -318,4 +318,4 @@ aside {
   }
 }
 
-@keyframes brain-maze-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes brain-preview-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }

@@ -4,6 +4,7 @@ import { eachTree, evaluate, MAKE_NUMBER_MAX_LEVEL, makeNumber, makeNumberFracti
 
 const viewOf = (s: MakeNumberState) => makeNumber.view(s) as MakeNumberView
 const equation = (s: MakeNumberState) => viewOf(s).equation.map((part) => part.text).join(' ')
+const toggleSquare = (s: MakeNumberState, index: number) => makeNumber.tap(makeNumber.tap(s, viewOf(s).square!.index), index)
 
 describe('Make the Number: editing and recovery', () => {
   it('an unfinished or wrong expression can be undone, cleared and solved at every level', () => {
@@ -49,7 +50,7 @@ describe('Make the Number: editing and recovery', () => {
     let s = makeNumber.create(4, createRng(8), DEFAULT_CONTEXT)
     const [a, b, c] = s.tiles
     const initial = viewOf(s)
-    const [first, second] = initial.equation.filter((part) => part.control !== undefined)
+    const [first, second] = initial.equation.filter((part) => part.control === 'sign')
     const choose = (sign: string) => { s = makeNumber.tap(s, initial.ops.find((o) => o.op === sign)!.index) }
     s = makeNumber.tap(s, second.index)
     choose('×')
@@ -67,7 +68,7 @@ describe('Make the Number: editing and recovery', () => {
     expect(equation(s)).toBe(`${a} □ ${b} □ ${c} = ${s.target}`)
   })
 
-  it('changes a sign in a free-order bracket group without changing the rest of the expression', () => {
+  it('keeps a sign selected when the preceding number is squared in a free-order bracket group', () => {
     let s = makeNumber.create(13, createRng(8), DEFAULT_CONTEXT)
     const [a, b, c] = s.tiles
     const initial = viewOf(s)
@@ -75,12 +76,18 @@ describe('Make the Number: editing and recovery', () => {
     for (const step of [sign('('), 0, sign('+'), 1, sign(')'), sign('×'), 2]) s = makeNumber.tap(s, step)
     expect(equation(s)).toBe(`( ${a} + ${b} ) × ${c} = ${s.target}`)
     expect(viewOf(s).submit.disabled).toBe(false)
-    const first = viewOf(s).equation.find((part) => part.control !== undefined)!
+    const first = viewOf(s).equation.find((part) => part.control === 'sign')!
+    const firstNumber = viewOf(s).equation.find((part) => part.control === 'square')!
     s = makeNumber.tap(s, first.index)
+    s = toggleSquare(s, firstNumber.index)
+    expect(equation(s)).toBe(`( ${a}² + ${b} ) × ${c} = ${s.target}`)
+    expect(viewOf(s).equation.find((part) => part.control === 'sign')?.selected).toBe(true)
     s = makeNumber.tap(s, sign('−'))
-    expect(equation(s)).toBe(`( ${a} − ${b} ) × ${c} = ${s.target}`)
+    expect(equation(s)).toBe(`( ${a}² − ${b} ) × ${c} = ${s.target}`)
     expect(viewOf(s).submit.disabled).toBe(false)
     s = makeNumber.tap(s, initial.undo.index)
+    expect(equation(s)).toBe(`( ${a}² + ${b} ) × ${c} = ${s.target}`)
+    s = toggleSquare(s, firstNumber.index)
     expect(equation(s)).toBe(`( ${a} + ${b} ) × ${c} = ${s.target}`)
   })
 
@@ -109,11 +116,14 @@ describe('Make the Number: square operator', () => {
       let s = makeNumber.create(7, createRng(seed), DEFAULT_CONTEXT)
       expect(s.tiles).toHaveLength(2)
       expect(s.witness.some((t) => t.kind === 'op' && t.op === '²')).toBe(true)
-      const square = (makeNumber.view(s) as MakeNumberView).ops.find((x) => x.op === '²')!
-      s = makeNumber.tap(s, square.index)
+      const square = viewOf(s).equation.find((part) => part.control === 'square')!
+      expect(square.selected).toBe(false)
+      expect(makeNumber.tap(s, square.index)).toBe(s)
+      expect(viewOf(makeNumber.tap(s, viewOf(s).square!.index)).prompt.key).toBe('play.makeSquareHint')
+      s = toggleSquare(s, square.index)
       expect(equation(s)).toBe(`${s.tiles[0]}² □ ${s.tiles[1]} = ${s.target}`)
-      expect(viewOf(s).ops.find((x) => x.op === '²')?.selected).toBe(true)
-      expect(equation(makeNumber.tap(s, square.index))).toBe(`${s.tiles[0]} □ ${s.tiles[1]} = ${s.target}`)
+      expect(viewOf(s).equation.find((part) => part.control === 'square')?.selected).toBe(true)
+      expect(equation(toggleSquare(s, square.index))).toBe(`${s.tiles[0]} □ ${s.tiles[1]} = ${s.target}`)
       s = makeNumber.tap(s, (makeNumber.view(s) as MakeNumberView).undo.index)
       expect(equation(s)).toBe(`${s.tiles[0]} □ ${s.tiles[1]} = ${s.target}`)
       for (const tap of makeNumber.solution(s)!) s = makeNumber.tap(s, tap)
@@ -124,11 +134,11 @@ describe('Make the Number: square operator', () => {
   it('changing the sign in a single blank preserves a square on either number', () => {
     let s = makeNumber.create(7, createRng(5), DEFAULT_CONTEXT)
     const [left, right] = s.tiles
-    const choices = (makeNumber.view(s) as MakeNumberView).ops
-    const square = choices.find((x) => x.op === '²')!.index
-    s = makeNumber.tap(s, square)
+    const { ops: choices, equation: parts } = viewOf(s)
+    const [squareLeft, squareRight] = parts.filter((part) => part.control === 'square')
+    s = toggleSquare(s, squareLeft.index)
     s = makeNumber.tap(s, choices.find((x) => x.op === '+')!.index)
-    s = makeNumber.tap(s, square)
+    s = toggleSquare(s, squareRight.index)
     s = makeNumber.tap(s, choices.find((x) => x.op === '×')!.index)
     expect(equation(s)).toBe(`${left}² × ${right}² = ${s.target}`)
     expect(viewOf(s).tries.left).toBe(3)
@@ -137,7 +147,8 @@ describe('Make the Number: square operator', () => {
   it('never offers or requires an unseen blocked square rule', () => {
     for (let level = 7; level <= 21; level++) {
       const s = makeNumber.create(level, createRng(level), { ...DEFAULT_CONTEXT, blockRules: ['makeNumber.square'] })
-      expect(s.ops).not.toContain('²')
+      expect(viewOf(s).square).toBeUndefined()
+      expect(viewOf(s).equation.some((part) => part.control === 'square')).toBe(false)
       expect(s.witness.some((t) => t.kind === 'op' && t.op === '²')).toBe(false)
     }
   })

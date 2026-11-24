@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useReducedMotion } from 'motion/react'
 import { BookOpen, Check, Copy, Droplet, Undo2, X, type LucideIcon } from 'lucide-react'
 import { CANVAS_TONES, type CellTone, type CellView, type ChoiceView, type GameTheme, type GridView, type RoundView } from '@reklue/shared/lib/brain-games'
-import { SetMatchBoard, CodeBreakBoard, MakeNumberBoard, MazeBoard } from './ThinkingBoards'
+import { CardRecallBoard, SetMatchBoard, CodeBreakBoard, MakeNumberBoard, MazeBoard } from './ThinkingBoards'
 import { BOARD_STRIP_H, CELL_INK, INK, boardHeight } from './brain-ui'
 
 /**
@@ -23,7 +23,7 @@ export interface BoardProps {
   demo?: boolean
   /** The tallest the board may be (defaults to what is left of the window). */
   maxHeight?: number
-  /** Move on from the answer's reveal (a tap on the board, Space / Enter): a choice's worked line. */
+  /** Move on from a worked answer when the player taps Continue or skips a timed reveal. */
   onSkip?: () => void
   /** The round is paused, or a card is over it: a memorise bar holds where it is. */
   paused?: boolean
@@ -43,6 +43,7 @@ function BoardContent(props: BoardProps) {
   if (view.kind === 'setMatch') return <SetMatchBoard {...props} view={view} />
   if (view.kind === 'codeBreak') return <CodeBreakBoard {...props} view={view} />
   if (view.kind === 'makeNumber') return <MakeNumberBoard {...props} view={view} />
+  if (view.kind === 'cardRecall') return <CardRecallBoard {...props} view={view} />
   return <MazeBoard {...props} view={view} />
 }
 

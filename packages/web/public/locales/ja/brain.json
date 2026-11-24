@@ -113,6 +113,10 @@
       "name": "数字を作ろう",
       "desc": "すべての数字を1回ずつ使って目標の数を作ります。"
     },
+    "cardRecall": {
+      "name": "トランプ記憶",
+      "desc": "各カードの数字・マーク・位置を覚えます。難しくなると共通カード5枚と手札2枚を短時間で覚えます。"
+    },
     "mazeRun": {
       "name": "迷路",
       "desc": "道をなぞって旗まで進みます。行き止まりでは引き返せます。"
@@ -247,7 +251,7 @@
     "makeTries_other": "残り{{count}}回",
     "makeExpression": "作成中の式",
     "makeSignSlot": "演算記号の欄 {{position}}",
-    "makeValue": "この式は{{value}}になります。直してみましょう。",
+    "makeValue": "計算結果 {{value}}",
     "mazeRunGo": "道をなぞって旗まで進んでください",
     "mazeRunKeys_one": "{{count}}個の鍵を番号順に集めてから旗へ",
     "mazeRunKeys_other": "{{count}}個の鍵を番号順に集めてから旗へ",
@@ -262,7 +266,23 @@
     "mazeKey_other": "{{count}}番の鍵",
     "memorizeNumbers": "数字の位置を覚えてください · 1〜{{max}}",
     "memoryBadge": "裏返して記憶",
-    "makeSquare": "最後の数を二乗",
+    "makeSquare": "{{number}}を二乗",
+    "makeSquareButton": "二乗 x²",
+    "makeSquareHint": "二乗する数をタップしてください。二乗済みの数をタップすると元に戻ります。",
+    "makeAnswer": "正しい式の例",
+    "cardRecallMemorize": "カードを位置ごとに覚えましょう",
+    "cardRecallEnter": "各カードの数字、マークの順に選びましょう",
+    "cardRecallCheck": "カードをタップして直すか、確定しましょう",
+    "cardRecallResult": "{{total}}枚中{{correct}}枚正解",
+    "cardRecallCommunity": "共通カード",
+    "cardRecallPrivate": "手札",
+    "cardRecallPosition": "カード{{position}}",
+    "cardRecallSuits": {
+      "spades": "スペード",
+      "hearts": "ハート",
+      "clubs": "クラブ",
+      "diamonds": "ダイヤ"
+    },
     "difficulty": {
       "foundation": "やさしいスタート・時間制限なし",
       "extreme": "極限の難易度"
@@ -654,7 +674,7 @@
       },
       "square": {
         "title": "二乗も使えます",
-        "body": "数の後で²を押すと、その数を自身に掛けます。3² = 9です。各数の二乗は一度だけ。二乗、×と÷、+と−の順に計算します。新しい演算は少ない数から始まり、その後に数が増えます。"
+        "body": "二乗は数を自分自身と掛けることです。たとえば、3² = 3 × 3 = 9 です。「二乗」を押してから数を選びます。元に戻すには「二乗」を押して同じ数をもう一度選びます。二乗は掛け算・割り算より先に計算します。"
       }
     },
     "mazeRun": {

@@ -113,6 +113,10 @@
       "name": "Buat Angka",
       "desc": "Gunakan setiap angka tepat satu kali untuk mencapai target."
     },
+    "cardRecall": {
+      "name": "Ingat Kartu Remi",
+      "desc": "Ingat nilai, jenis, dan posisi setiap kartu. Berlatih hingga lima kartu komunitas dan dua kartu pribadi dengan waktu melihat yang lebih singkat."
+    },
     "mazeRun": {
       "name": "Labirin",
       "desc": "Gambar jalur menuju bendera. Mundur saat menemui jalan buntu."
@@ -247,7 +251,7 @@
     "makeTries_other": "Sisa {{count}} percobaan",
     "makeExpression": "Ekspresi Anda",
     "makeSignSlot": "Kotak tanda operasi {{position}}",
-    "makeValue": "Hasilnya {{value}}. Coba ubah.",
+    "makeValue": "Hasil perhitungan {{value}}",
     "mazeRunGo": "Gambar jalur menuju bendera",
     "mazeRunKeys_one": "Ambil {{count}} kunci sesuai urutan lalu menuju bendera",
     "mazeRunKeys_other": "Ambil {{count}} kunci sesuai urutan lalu menuju bendera",
@@ -262,7 +266,23 @@
     "mazeKey_other": "Kunci {{count}}",
     "memorizeNumbers": "Ingat posisi angka · 1 sampai {{max}}",
     "memoryBadge": "Ingatan kartu tertutup",
-    "makeSquare": "Kuadratkan angka terakhir",
+    "makeSquare": "Kuadratkan {{number}}",
+    "makeSquareButton": "Kuadrat x²",
+    "makeSquareHint": "Ketuk angka untuk menguadratkannya. Ketuk angka yang sudah dikuadratkan untuk membatalkan.",
+    "makeAnswer": "Contoh persamaan yang benar",
+    "cardRecallMemorize": "Ingat posisi setiap kartu",
+    "cardRecallEnter": "Pilih nilai lalu jenis untuk setiap kartu",
+    "cardRecallCheck": "Ketuk kartu untuk mengubahnya atau konfirmasi",
+    "cardRecallResult": "{{correct}} dari {{total}} kartu benar",
+    "cardRecallCommunity": "Kartu komunitas",
+    "cardRecallPrivate": "Kartu pribadi",
+    "cardRecallPosition": "Kartu {{position}}",
+    "cardRecallSuits": {
+      "spades": "Sekop",
+      "hearts": "Hati",
+      "clubs": "Keriting",
+      "diamonds": "Wajik"
+    },
     "difficulty": {
       "foundation": "Awal yang mudah · tanpa batas waktu",
       "extreme": "Kesulitan ekstrem"
@@ -654,7 +674,7 @@
       },
       "square": {
         "title": "Gunakan kuadrat juga",
-        "body": "Ketuk ² setelah angka untuk mengalikannya dengan dirinya sendiri: 3² = 9. Setiap ubin angka hanya dapat dikuadratkan sekali. Hitung kuadrat dahulu, lalu × dan ÷, kemudian + dan −. Operasi baru dimulai dengan lebih sedikit angka, lalu jumlahnya bertambah."
+        "body": "Kuadrat adalah hasil mengalikan angka dengan dirinya sendiri. Contohnya, 3² = 3 × 3 = 9. Ketuk Kuadrat lalu pilih angka. Untuk membatalkan, ketuk Kuadrat dan pilih angka yang sama lagi. Hitung kuadrat sebelum × dan ÷."
       }
     },
     "mazeRun": {
