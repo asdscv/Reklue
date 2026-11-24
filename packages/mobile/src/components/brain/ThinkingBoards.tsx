@@ -92,19 +92,24 @@ export function CodeBreakBoard({ view, onTap, width, height, demo, registerTarge
 
 export function MakeNumberBoard({ view, onTap, width, height, demo, registerTarget }: Props<MakeNumberView>) {
   const { t } = useTranslation('brain')
-  const expression = view.expression.map((x) => x.kind === 'num' ? x.value : x.op).join(' ')
-  const signs = view.expression.filter((x) => x.kind === 'op' && x.op !== '²')
   return <Frame width={width} height={height} demo={demo}>
-    <Text style={[styles.hint, { fontSize: demo ? 18 : 30, fontWeight: '700' }]}>{t('play.makeTarget', { target: view.target })}</Text>
-    <Text style={[styles.hint, { fontSize: demo ? 12 : 16 }]}>{t(view.order === 'fixed' ? 'play.makeFixed' : 'play.makeAny')} · {t('play.makeTries', { count: view.tries.left })}</Text>
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
-      {view.tiles.map((n, i) => <View key={n.index} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-        <Tap {...n} demo={demo} onTap={onTap} registerTarget={registerTarget} style={{ minWidth: demo ? 28 : 56, backgroundColor: '#fff', opacity: n.used ? 0.5 : 1 }}><Text style={{ color: '#0F172A', fontSize: demo ? 18 : 28, fontWeight: '700' }}>{n.value}</Text></Tap>
-        {view.order === 'fixed' && i < view.tiles.length - 1 && <Text style={{ fontSize: demo ? 16 : 24, color: '#fff' }}>{signs[i]?.kind === 'op' ? signs[i].op : '□'}</Text>}
-      </View>)}
+    <Text style={[styles.hint, { fontSize: demo ? 12 : 16 }]}>
+      {view.order === 'any' && `${t('play.makeAny')} · `}{t('play.makeTries', { count: view.tries.left })}
+    </Text>
+    {view.order === 'any' && <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}>
+      {view.tiles.map((n) => <Tap key={n.index} {...n} demo={demo} onTap={onTap} registerTarget={registerTarget} style={{ minWidth: demo ? 28 : 56, backgroundColor: '#fff', opacity: n.used ? 0.5 : 1 }}><Text style={{ color: '#0F172A', fontSize: demo ? 18 : 28, fontWeight: '700' }}>{n.value}</Text></Tap>)}
+    </View>}
+    <View style={styles.equation} accessibilityLiveRegion="polite" testID={demo ? undefined : 'brain-make-equation'}>
+      {view.equation.map((part, i) => part.control ?
+        <Tap key={`control-${part.index}`} {...part} onTap={onTap} demo={demo} registerTarget={registerTarget}
+          label={part.control === 'sign' ? `${t('play.makeSignSlot', { position: part.position })} ${part.text}` : `${part.text} ${t('play.makeSquare')}`}
+          style={{ minHeight: demo ? 24 : 44, minWidth: demo ? 24 : 44, ...(part.selected ? { borderColor: '#C7D2FE', backgroundColor: '#454884' } : {}) }}>{part.text}</Tap>
+        : <Text key={`text-${i}`} style={[styles.buttonText, { fontSize: demo ? 18 : 28 }]}>{part.text}</Text>)}
     </View>
-    <Text style={[styles.expression, { fontSize: demo ? 18 : 28, minHeight: demo ? 30 : 60 }]} accessibilityLabel={t('play.makeExpression')} accessibilityLiveRegion="polite">{expression || '…'}{view.preview !== undefined ? ` = ${view.preview}` : ''}</Text>
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{view.ops.map((o) => <Tap key={o.op} {...o} label={o.op === '²' ? t('play.makeSquare') : o.op} disabled={o.disabled || view.locked} onTap={onTap} demo={demo} registerTarget={registerTarget} style={{ width: (width - (Math.min(4, view.ops.length) - 1) * 8) / Math.min(4, view.ops.length) }}>{o.op}</Tap>)}</View>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      {view.ops.map((o) => <Tap key={o.op} {...o} label={o.op === '²' ? t('play.makeSquare') : o.op} disabled={o.disabled || view.locked} onTap={onTap} demo={demo} registerTarget={registerTarget}
+        style={{ width: (width - (Math.min(4, view.ops.length) - 1) * 8) / Math.min(4, view.ops.length), ...(o.selected ? { borderColor: '#C7D2FE', backgroundColor: '#454884' } : {}) }}>{o.op}</Tap>)}
+    </View>
     <View style={styles.row}>
       <Tap {...view.undo} onTap={onTap} demo={demo} registerTarget={registerTarget} style={styles.flex}>{t('play.undo')}</Tap>
       <Tap {...view.clear} onTap={onTap} demo={demo} registerTarget={registerTarget} style={styles.flex}>{t('play.clear')}</Tap>
@@ -173,7 +178,7 @@ const styles = StyleSheet.create({
   historyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingHorizontal: 8, paddingVertical: 4 },
   entry: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
   entryCell: { alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderWidth: 2, borderColor: '#ffffff80', backgroundColor: '#ffffff1a' },
-  expression: { color: '#fff', fontWeight: '700', backgroundColor: '#0003', borderRadius: 12, textAlign: 'center', padding: 10 },
+  equation: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 4, backgroundColor: '#0003', borderRadius: 12, padding: 8 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   flex: { flex: 1 },
 })

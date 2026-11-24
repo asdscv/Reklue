@@ -237,7 +237,8 @@
     "submit": "Submit",
     "undo": "Undo",
     "clear": "Clear",
-    "makeNumberSigns": "Choose the signs to make {{target}}",
+    "makeNumberSigns": "Fill in the missing operators",
+    "makeNumberSlots": "Tap a slot to fill or change its operator",
     "makeNumberTarget": "Use every number to make {{target}}",
     "makeTarget": "Target {{target}}",
     "makeFixed": "Keep this order · choose the signs",
@@ -245,6 +246,7 @@
     "makeTries_one": "{{count}} tries left",
     "makeTries_other": "{{count}} tries left",
     "makeExpression": "Your expression",
+    "makeSignSlot": "Operator slot {{position}}",
     "makeValue": "This makes {{value}}. Try editing it.",
     "mazeRunGo": "Trace a path to the flag",
     "mazeRunKeys_one": "Collect {{count}} keys in number order, then reach the flag",
@@ -632,7 +634,7 @@
       },
       "divide": {
         "title": "Division joins in",
-        "body": "Try ÷ too. Do × and ÷ first, from left to right."
+        "body": "Multiplication and division have equal priority and come before addition and subtraction. When they appear in a row, work from left to right. For example, 12 ÷ 2 × 3 = 6 × 3 = 18."
       },
       "anyOrder": {
         "title": "Choose the order",

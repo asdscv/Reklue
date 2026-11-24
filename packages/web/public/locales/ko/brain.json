@@ -237,7 +237,8 @@
     "submit": "확인",
     "undo": "되돌리기",
     "clear": "비우기",
-    "makeNumberSigns": "부호를 골라 목표 {{target}} 만들기",
+    "makeNumberSigns": "빈칸에 들어갈 연산 기호를 고르세요",
+    "makeNumberSlots": "채우거나 바꿀 칸을 누른 뒤 연산 기호를 고르세요",
     "makeNumberTarget": "수를 모두 써서 목표 {{target}} 만들기",
     "makeTarget": "목표 {{target}}",
     "makeFixed": "수는 이 순서대로 · 부호를 고르세요",
@@ -245,6 +246,7 @@
     "makeTries_one": "확인 {{count}}번 남음",
     "makeTries_other": "확인 {{count}}번 남음",
     "makeExpression": "만들고 있는 식",
+    "makeSignSlot": "연산 기호 칸 {{position}}",
     "makeValue": "이 식은 {{value}}이 돼요. 고쳐 보세요.",
     "mazeRunGo": "길을 그려 깃발까지 가세요",
     "mazeRunKeys_one": "열쇠 {{count}}개를 번호 순서대로 모은 뒤 깃발로 가세요",
@@ -632,7 +634,7 @@
       },
       "divide": {
         "title": "나누기도 써요",
-        "body": "÷도 써 보세요. ×와 ÷는 왼쪽부터 먼저 계산해요."
+        "body": "곱셈과 나눗셈은 우선순위가 같고 덧셈과 뺄셈보다 먼저 계산해요. 곱셈과 나눗셈이 괄호 없이 이어지면 왼쪽부터 계산해요. 예를 들어 12 ÷ 2 × 3 = 6 × 3 = 18이에요."
       },
       "anyOrder": {
         "title": "수의 순서도 자유",

@@ -84,21 +84,26 @@ export function CodeBreakBoard({ view, onTap, width, demo }: Props<CodeBreakView
 
 export function MakeNumberBoard({ view, onTap, width, demo }: Props<MakeNumberView>) {
   const { t } = useTranslation('brain')
-  const expression = view.expression.map((x) => x.kind === 'num' ? x.value : x.op).join(' ')
-  const signs = view.expression.filter((x) => x.kind === 'op' && x.op !== '²')
   return <div style={{ width }} className="space-y-3" data-testid="brain-make-number">
-    <p className="text-center text-white font-bold" style={{ fontSize: demo ? 18 : 30 }}>{t('play.makeTarget', { target: view.target })}</p>
-    <p className="text-center text-white/85" style={{ fontSize: demo ? 12 : 16 }}>{t(view.order === 'fixed' ? 'play.makeFixed' : 'play.makeAny')} · {t('play.makeTries', { count: view.tries.left })}</p>
-    <div className="flex flex-wrap justify-center items-center gap-2">
-      {view.tiles.map((n, i) => <div key={n.index} className="flex items-center gap-2">
-        <Tap {...n} onTap={onTap} demo={demo} style={{ minWidth: demo ? 28 : 56, background: '#fff', color: '#0F172A', opacity: n.used ? 0.45 : 1 }}>{n.value}</Tap>
-        {view.order === 'fixed' && i < view.tiles.length - 1 && <span className="text-white font-bold" style={{ fontSize: demo ? 16 : 26 }}>{signs[i]?.kind === 'op' ? signs[i].op : '□'}</span>}
-      </div>)}
+    <p className="text-center text-white/85" style={{ fontSize: demo ? 12 : 16 }}>
+      {view.order === 'any' && `${t('play.makeAny')} · `}{t('play.makeTries', { count: view.tries.left })}
+    </p>
+    {view.order === 'any' && <div className="flex flex-wrap justify-center gap-2">
+      {view.tiles.map((n) => <Tap key={n.index} {...n} onTap={onTap} demo={demo} style={{ minWidth: demo ? 28 : 56, background: '#fff', color: '#0F172A', opacity: n.used ? 0.45 : 1 }}>{n.value}</Tap>)}
+    </div>}
+    <div className="flex flex-wrap items-center justify-center gap-1 rounded-xl bg-black/20 p-2 text-white font-bold"
+      style={{ fontSize: demo ? 18 : 28 }} role="group" aria-label={t('play.makeExpression')} data-testid="brain-make-equation">
+      <span className="sr-only" aria-live="polite" aria-atomic="true">{view.equation.map((part) => part.text).join(' ')}</span>
+      {view.equation.map((part, i) => part.control ?
+        <Tap key={`control-${part.index}`} {...part} onTap={onTap} demo={demo}
+          label={part.control === 'sign' ? `${t('play.makeSignSlot', { position: part.position })} ${part.text}` : `${part.text} ${t('play.makeSquare')}`}
+          style={{ minHeight: demo ? 24 : 44, minWidth: demo ? 24 : 44, paddingInline: 4, ...(part.selected ? { borderColor: '#C7D2FE', background: '#454884' } : {}) }}>{part.text}</Tap>
+        : <span key={`text-${i}`} className="whitespace-nowrap">{part.text}</span>)}
     </div>
-    <div className="rounded-xl bg-black/20 p-3 text-center text-white font-bold break-words" style={{ minHeight: demo ? 30 : 60, fontSize: demo ? 18 : 28 }} aria-live="polite" aria-label={t('play.makeExpression')}>
-      {expression || '…'}{view.preview !== undefined && ` = ${view.preview}`}
+    <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(4, view.ops.length)}, 1fr)` }}>
+      {view.ops.map((o) => <Tap key={o.op} {...o} label={o.op === '²' ? t('play.makeSquare') : o.op} onTap={onTap} demo={demo} disabled={o.disabled || view.locked}
+        style={o.selected ? { borderColor: '#C7D2FE', background: '#454884' } : undefined}>{o.op}</Tap>)}
     </div>
-    <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(4, view.ops.length)}, 1fr)` }}>{view.ops.map((o) => <Tap key={o.op} {...o} label={o.op === '²' ? t('play.makeSquare') : o.op} onTap={onTap} demo={demo} disabled={o.disabled || view.locked}>{o.op}</Tap>)}</div>
     <div className="grid grid-cols-3 gap-2">
       <Tap {...view.undo} onTap={onTap} demo={demo}>{t('play.undo')}</Tap>
       <Tap {...view.clear} onTap={onTap} demo={demo}>{t('play.clear')}</Tap>
