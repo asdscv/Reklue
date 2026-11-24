@@ -1,4 +1,4 @@
-import type { BrainGameDef, CreateContext, MakeNumberView, MakeOp, MakeToken } from '../types'
+import type { BrainGameDef, CreateContext, MakeBinaryOp, MakeEquationPart, MakeNumberView, MakeOp, MakeToken } from '../types'
 import type { Rng } from '../rng'
 
 /**
@@ -11,8 +11,8 @@ import type { Rng } from '../rng'
  * L1-2 +/− (2, 4 tiles), L3-4 × (2, 3), L5-6 ÷ (2, 4), L7-9 ² (2, 3, 4),
  * L10-12 any order (3, 4, 4), L13-15 brackets (3, 4, 4), L16 make 24,
  * L17-21 fractions on the way. Squaring is once per number tile, before ×/÷.
- * In fixed order the numbers place themselves: the player taps the sign between them and the next
- * number follows (`view.order`). The running value is shown as a help on the first band of each new operator.
+ * In fixed order the numbers are shown with blanks between them. Any blank or entered sign can be selected.
+ * The equation shows the target throughout. The player's expression is evaluated on submit.
  *
  * Every puzzle is solved before it is shown: the generator enumerates every expression in exact
  * rational arithmetic (fixed order: every choice of signs; any order: every expression tree, so
@@ -53,8 +53,6 @@ export interface MakeNumberBand {
   maxTarget: number
   /** Exactly 24. */
   target24: boolean
-  /** The expression's value is shown while building (a help, low levels only). */
-  preview: boolean
   tries: number
   parMs: number
   /** 0 any target the numbers make · 0.5 the fewer-ways half · 1 the fewest ways. */
@@ -72,14 +70,13 @@ const KIND: Record<MakeNumberKind, Pick<MakeNumberBand, 'order' | 'times' | 'div
   fraction: { order: 'any', times: true, divide: true, square: true, brackets: true, need: null, fraction: true, target24: false },
 }
 
-const row = (kind: MakeNumberKind, tiles: number, minTile: number, maxTile: number, maxTarget: number, preview: boolean, tries: number, parMs: number, hard: number): MakeNumberBand => ({
+const row = (kind: MakeNumberKind, tiles: number, minTile: number, maxTile: number, maxTarget: number, tries: number, parMs: number, hard: number): MakeNumberBand => ({
   kind,
   ...KIND[kind],
   tiles,
   minTile,
   maxTile,
   maxTarget,
-  preview,
   tries,
   parMs,
   hard,
@@ -87,27 +84,27 @@ const row = (kind: MakeNumberKind, tiles: number, minTile: number, maxTile: numb
 
 /** Band b is MAKE_NUMBER_LADDER[b − 1]. */
 export const MAKE_NUMBER_LADDER: readonly MakeNumberBand[] = [
-  row('plus', 2, 1, 9, 20, true, 3, 30_000, 0),
-  row('plus', 4, 1, 9, 40, true, 3, 45_000, 0.5),
-  row('times', 2, 2, 9, 81, true, 3, 45_000, 0),
-  row('times', 3, 2, 9, 99, false, 3, 50_000, 0.5),
-  row('divide', 2, 2, 12, 99, true, 3, 45_000, 0),
-  row('divide', 4, 2, 9, 99, false, 2, 65_000, 0.5),
-  row('square', 2, 2, 9, 99, true, 3, 55_000, 0),
-  row('square', 3, 2, 9, 99, false, 2, 65_000, 0.5),
-  row('square', 4, 2, 9, 99, false, 2, 75_000, 1),
-  row('anyOrder', 3, 2, 9, 99, false, 2, 60_000, 0),
-  row('anyOrder', 4, 2, 9, 99, false, 2, 85_000, 0.5),
-  row('anyOrder', 4, 2, 13, 99, false, 2, 85_000, 1),
-  row('brackets', 3, 2, 9, 99, false, 2, 60_000, 0),
-  row('brackets', 4, 1, 9, 99, false, 2, 95_000, 0.5),
-  row('brackets', 4, 1, 9, 99, false, 2, 85_000, 1),
-  row('make24', 4, 1, 13, 24, false, 2, 80_000, 0.5),
-  row('fraction', 4, 1, 9, 99, false, 3, 150_000, 0),
-  row('fraction', 4, 1, 9, 99, false, 2, 120_000, 0.5),
-  row('fraction', 4, 1, 13, 99, false, 2, 90_000, 0.5),
-  row('fraction', 4, 1, 13, 99, false, 2, 70_000, 1),
-  row('fraction', 4, 1, 13, 99, false, 2, 50_000, 1),
+  row('plus', 2, 1, 9, 20, 3, 30_000, 0),
+  row('plus', 4, 1, 9, 40, 3, 45_000, 0.5),
+  row('times', 2, 2, 9, 81, 3, 45_000, 0),
+  row('times', 3, 2, 9, 99, 3, 50_000, 0.5),
+  row('divide', 2, 2, 12, 99, 3, 45_000, 0),
+  row('divide', 4, 2, 9, 99, 2, 65_000, 0.5),
+  row('square', 2, 2, 9, 99, 3, 55_000, 0),
+  row('square', 3, 2, 9, 99, 2, 65_000, 0.5),
+  row('square', 4, 2, 9, 99, 2, 75_000, 1),
+  row('anyOrder', 3, 2, 9, 99, 2, 60_000, 0),
+  row('anyOrder', 4, 2, 9, 99, 2, 85_000, 0.5),
+  row('anyOrder', 4, 2, 13, 99, 2, 85_000, 1),
+  row('brackets', 3, 2, 9, 99, 2, 60_000, 0),
+  row('brackets', 4, 1, 9, 99, 2, 95_000, 0.5),
+  row('brackets', 4, 1, 9, 99, 2, 85_000, 1),
+  row('make24', 4, 1, 13, 24, 2, 80_000, 0.5),
+  row('fraction', 4, 1, 9, 99, 3, 150_000, 0),
+  row('fraction', 4, 1, 9, 99, 2, 120_000, 0.5),
+  row('fraction', 4, 1, 13, 99, 2, 90_000, 0.5),
+  row('fraction', 4, 1, 13, 99, 2, 70_000, 1),
+  row('fraction', 4, 1, 13, 99, 2, 50_000, 1),
 ]
 
 export const MAKE_NUMBER_MAX_LEVEL = MAKE_NUMBER_LADDER.length
@@ -173,7 +170,6 @@ function stretched(e: number, lv: number, open: string): MakeNumberPlan {
     maxTile,
     maxTarget: r.target24 ? 24 : 99,
     hard: 1,
-    preview: r.preview && lv < 5,
     tries: lv >= 7 ? Math.min(r.tries, 2) : r.tries,
     parMs,
     band: e,
@@ -256,8 +252,8 @@ function apply(a: Frac, op: MakeOp, b: Frac): Frac | null {
 }
 
 /**
- * The exact value of an expression: × ÷ before + −, left to right, brackets first. Null when it is
- * not a complete expression (a dangling operator, an unclosed bracket) or divides by zero.
+ * Evaluate brackets and squares before × and ÷, then + and −. Chain operators of equal precedence
+ * from left to right. A malformed expression or division by zero returns null.
  */
 export function evaluate(tokens: readonly MakeToken[]): Frac | null {
   let i = 0
@@ -930,16 +926,25 @@ const usedTiles = (expr: readonly MakeToken[]) => new Set(expr.flatMap((t) => (t
 
 // ── the game ────────────────────────────────────────────────────────────────
 
+type FixedInput = {
+  order: 'fixed'
+  signs: (MakeBinaryOp | null)[]
+  squares: boolean[]
+  signSlot: number
+  squareTile: number
+}
+
+type FreeInput = { order: 'any'; tokens: MakeToken[]; signSlot: number | null }
+type MakeNumberInput = FixedInput | FreeInput
+
 export interface MakeNumberState {
   /** In the order shown. */
   tiles: number[]
   target: number
-  /** 'fixed': the tiles place themselves in order; only signs are tapped. */
-  order: 'fixed' | 'any'
   ops: MakeOp[]
   witness: MakeToken[]
-  expr: MakeToken[]
-  preview: boolean
+  input: MakeNumberInput
+  undoStack: MakeNumberInput[]
   triesLeft: number
   tries: number
   wrong: number
@@ -964,19 +969,136 @@ const idx = {
   undo: (s: MakeNumberState) => s.tiles.length + s.ops.length,
   clear: (s: MakeNumberState) => s.tiles.length + s.ops.length + 1,
   submit: (s: MakeNumberState) => s.tiles.length + s.ops.length + 2,
+  slot: (s: MakeNumberState, i: number) => s.tiles.length + s.ops.length + 3 + i,
+}
+
+const isBinary = (o: MakeOp): o is MakeBinaryOp => o === '+' || o === '−' || o === '×' || o === '÷'
+
+function startInput(order: MakeNumberInput['order'], tileCount: number): MakeNumberInput {
+  if (order === 'any') return { order, tokens: [], signSlot: null }
+  return {
+    order,
+    signs: Array.from({ length: tileCount - 1 }, () => null),
+    squares: Array.from({ length: tileCount }, () => false),
+    signSlot: 0,
+    squareTile: 0,
+  }
 }
 
 function opEnabled(s: MakeNumberState, o: MakeOp): boolean {
-  const want = expectsOperand(s.expr)
-  if (o === '²') return s.expr.at(-1)?.kind === 'num'
-  if (s.order === 'fixed') return !want && usedTiles(s.expr).size < s.tiles.length
-  if (o === '(') return want && usedTiles(s.expr).size < s.tiles.length
-  if (o === ')') return !want && openBrackets(s.expr) > 0
+  const input = s.input
+  if (input.order === 'fixed') return isBinary(o) || o === '²'
+  if (isBinary(o) && input.signSlot !== null) return true
+  const want = expectsOperand(input.tokens)
+  if (o === '²') return input.tokens.at(-1)?.kind === 'num'
+  if (o === '(') return want && usedTiles(input.tokens).size < s.tiles.length
+  if (o === ')') return !want && openBrackets(input.tokens) > 0
   return !want
 }
 
-const complete = (s: MakeNumberState) => !expectsOperand(s.expr) && openBrackets(s.expr) === 0 && usedTiles(s.expr).size === s.tiles.length
-const start = (s: Pick<MakeNumberState, 'order' | 'tiles'>): MakeToken[] => (s.order === 'fixed' ? [num(s.tiles[0], 0)] : [])
+function complete(s: MakeNumberState): boolean {
+  if (s.input.order === 'fixed') return s.input.signs.every((sign) => sign !== null)
+  const { tokens } = s.input
+  return !expectsOperand(tokens) && openBrackets(tokens) === 0 && usedTiles(tokens).size === s.tiles.length
+}
+
+function fixedTokens(tiles: readonly number[], input: FixedInput): MakeToken[] {
+  const tokens: MakeToken[] = []
+  for (const [i, value] of tiles.entries()) {
+    const sign = input.signs[i - 1]
+    if (sign) tokens.push(op(sign))
+    tokens.push(num(value, i))
+    if (input.squares[i]) tokens.push(op('²'))
+  }
+  return tokens
+}
+
+function putFixedOperator(input: FixedInput, o: MakeOp): FixedInput {
+  if (o === '²') {
+    const squares = input.squares.map((squared, i) => i === input.squareTile ? !squared : squared)
+    return { ...input, squares }
+  }
+  const { signs, signSlot } = input
+  if (!isBinary(o) || signs[signSlot] === o) return input
+  const updated = signs.map((sign, i) => i === signSlot ? o : sign)
+  if (signs[signSlot] !== null) return { ...input, signs: updated }
+  // Fill from left to right by default. A tap can choose any slot at any time.
+  const next = updated.indexOf(null, signSlot + 1)
+  const first = updated.indexOf(null)
+  return { ...input, signs: updated, signSlot: next >= 0 ? next : first >= 0 ? first : signSlot, squareTile: signSlot + 1 }
+}
+
+function selectSign(input: MakeNumberInput, position: number): MakeNumberInput {
+  if (input.order === 'fixed') {
+    return position < input.signs.length && position !== input.signSlot ? { ...input, signSlot: position } : input
+  }
+  const token = input.tokens[position]
+  if (token?.kind !== 'op' || !isBinary(token.op)) return input
+  return { ...input, signSlot: input.signSlot === position ? null : position }
+}
+
+function equationParts(s: MakeNumberState, ready: boolean, done: boolean): MakeEquationPart[] {
+  const { input } = s
+  const parts: MakeEquationPart[] = []
+  if (input.order === 'fixed') {
+    const canSquare = s.ops.includes('²')
+    for (const [i, value] of s.tiles.entries()) {
+      if (i > 0) parts.push({ text: input.signs[i - 1] ?? '□', control: 'sign', position: i, index: idx.slot(s, i - 1), selected: input.signSlot === i - 1, disabled: done })
+      const text = `${value}${input.squares[i] ? '²' : ''}`
+      parts.push(canSquare ? { text, control: 'tile', position: i + 1, index: i, selected: input.squareTile === i, disabled: done } : { text })
+    }
+  } else {
+    let signNumber = 0
+    for (const [i, token] of input.tokens.entries()) {
+      if (token.kind === 'num') {
+        const next = input.tokens[i + 1]
+        parts.push({ text: `${token.value}${next?.kind === 'op' && next.op === '²' ? '²' : ''}` })
+      } else if (isBinary(token.op)) {
+        signNumber++
+        parts.push({ text: token.op, control: 'sign', position: signNumber, index: idx.slot(s, i), selected: input.signSlot === i, disabled: done })
+      } else if (token.op !== '²') {
+        parts.push({ text: token.op })
+      }
+    }
+    if (!ready) parts.push({ text: '…' })
+  }
+  return [...parts, { text: `= ${s.target}` }]
+}
+
+function fixedSolution(s: MakeNumberState, input: FixedInput): number[] {
+  const taps: number[] = []
+  const squared = new Set<number>()
+  let draft = input
+  let lastTile = 0
+  let signSlot = 0
+  const press = (sign: MakeOp) => {
+    taps.push(idx.op(s, s.ops.indexOf(sign)))
+    draft = putFixedOperator(draft, sign)
+  }
+  for (const token of s.witness) {
+    if (token.kind === 'num') lastTile = token.tile
+    else if (token.op === '²') squared.add(lastTile)
+    else if (isBinary(token.op)) {
+      if (draft.signs[signSlot] !== token.op) {
+        if (draft.signSlot !== signSlot) {
+          taps.push(idx.slot(s, signSlot))
+          draft = { ...draft, signSlot }
+        }
+        press(token.op)
+      }
+      signSlot++
+    }
+  }
+  for (const [tile, hasSquare] of draft.squares.entries()) {
+    if (hasSquare === squared.has(tile)) continue
+    if (draft.squareTile !== tile) {
+      taps.push(tile)
+      draft = { ...draft, squareTile: tile }
+    }
+    press('²')
+  }
+  return [...taps, idx.submit(s)]
+}
 
 const signature = (order: 'fixed' | 'any', tiles: readonly number[], target: number) =>
   order === 'fixed' ? `mn:f:${tiles.join(',')}=${target}` : `mn:${[...tiles].sort((a, b) => a - b).join(',')}=${target}`
@@ -996,14 +1118,13 @@ export const makeNumber: BrainGameDef<MakeNumberState> = {
     if (p.brackets) tags.push('makeNumber.brackets')
     if (p.target24) tags.push('makeNumber.target24')
     if (p.kind === 'fraction') tags.push('makeNumber.fraction')
-    const s: MakeNumberState = {
+    return {
       tiles: puzzle.tiles,
       target: puzzle.target,
-      order: p.order,
       ops,
       witness: puzzle.witness,
-      expr: [],
-      preview: p.preview,
+      input: startInput(p.order, puzzle.tiles.length),
+      undoStack: [],
       triesLeft: p.tries,
       tries: p.tries,
       wrong: 0,
@@ -1017,37 +1138,46 @@ export const makeNumber: BrainGameDef<MakeNumberState> = {
       ways: puzzle.ways,
       carry: p.open,
     }
-    return { ...s, expr: start(s) }
   },
   pendingMs: () => null,
   advance: (s) => s,
   acceptsInput: (s) => !over(s),
   tap(s, i) {
     if (over(s) || !Number.isInteger(i)) return s
-    const edit = (expr: MakeToken[]): MakeNumberState => ({ ...s, expr, lastValue: null })
-    const fixed = s.order === 'fixed'
-    if (i >= 0 && i < s.tiles.length) {
-      // Fixed order places the tiles itself.
-      if (fixed || !expectsOperand(s.expr) || usedTiles(s.expr).has(i)) return s
-      return edit([...s.expr, num(s.tiles[i], i)])
-    }
-    if (i >= idx.op(s, 0) && i < idx.op(s, s.ops.length)) {
-      const o = s.ops[i - idx.op(s, 0)]
-      if (!opEnabled(s, o)) return s
-      if (!fixed || o === '²') return edit([...s.expr, op(o)])
-      const next = usedTiles(s.expr).size
-      return edit([...s.expr, op(o), num(s.tiles[next], next)])
-    }
-    const base = start(s)
-    if (i === idx.undo(s)) return s.expr.length > base.length ? edit(s.expr.slice(0, fixed && s.expr.at(-1)?.kind === 'num' ? -2 : -1)) : s
-    if (i === idx.clear(s)) return s.expr.length > base.length ? edit(base) : s
+    const { input, undoStack } = s
+    const select = (next: MakeNumberInput) => next === input ? s : { ...s, input: next }
+    const edit = (next: MakeNumberInput) => next === input ? s : { ...s, input: next, undoStack: [...undoStack, input], lastValue: null }
     if (i === idx.submit(s)) {
       if (!complete(s)) return s
-      const v = evaluate(s.expr)
+      const v = evaluate(input.order === 'fixed' ? fixedTokens(s.tiles, input) : input.tokens)
       if (v && v.d === 1 && v.n === s.target) return { ...s, solved: true }
       return { ...s, triesLeft: s.triesLeft - 1, wrong: s.wrong + 1, lastValue: v ? formatFrac(v) : '?' }
     }
-    return s
+    if (i === idx.undo(s)) {
+      const previous = undoStack.at(-1)
+      return previous ? { ...s, input: previous, undoStack: undoStack.slice(0, -1), lastValue: null } : s
+    }
+    if (i === idx.clear(s)) {
+      return undoStack.length ? { ...s, input: startInput(input.order, s.tiles.length), undoStack: [], lastValue: null } : s
+    }
+    if (i >= idx.slot(s, 0)) return select(selectSign(input, i - idx.slot(s, 0)))
+    if (i >= 0 && i < s.tiles.length) {
+      if (input.order === 'fixed') {
+        return s.ops.includes('²') && input.squareTile !== i ? select({ ...input, squareTile: i }) : s
+      }
+      if (!expectsOperand(input.tokens) || usedTiles(input.tokens).has(i)) return s
+      return edit({ ...input, tokens: [...input.tokens, num(s.tiles[i], i)], signSlot: null })
+    }
+    const o = s.ops[i - idx.op(s, 0)]
+    if (!o || !opEnabled(s, o)) return s
+    if (input.order === 'fixed') return edit(putFixedOperator(input, o))
+    if (isBinary(o) && input.signSlot !== null) {
+      const token = input.tokens[input.signSlot]
+      if (token.kind === 'op' && token.op === o) return select({ ...input, signSlot: null })
+      const tokens = input.tokens.map((t, j) => j === input.signSlot ? op(o) : t)
+      return edit({ ...input, tokens, signSlot: null })
+    }
+    return edit({ ...input, tokens: [...input.tokens, op(o)], signSlot: null })
   },
   timeout: (s) => (over(s) ? s : { ...s, timedOut: true }),
   outcome(s) {
@@ -1056,27 +1186,33 @@ export const makeNumber: BrainGameDef<MakeNumberState> = {
   },
   timeLimitMs: (s) => s.limitMs,
   view(s): MakeNumberView {
+    const { input } = s
     const done = over(s)
-    const used = usedTiles(s.expr)
-    const want = expectsOperand(s.expr)
-    const fixed = s.order === 'fixed'
+    const fixed = input.order === 'fixed'
+    const used = usedTiles(fixed ? [] : input.tokens)
+    const want = !fixed && expectsOperand(input.tokens)
+    const ready = complete(s)
+    const selectedToken = !fixed && input.signSlot !== null ? input.tokens[input.signSlot] : null
+    const chosen = fixed ? input.signs[input.signSlot] : selectedToken?.kind === 'op' ? selectedToken.op : undefined
+    const promptKey = fixed ? (input.signs.length > 1 ? 'play.makeNumberSlots' : 'play.makeNumberSigns') : 'play.makeNumberTarget'
     const view: MakeNumberView = {
       kind: 'makeNumber',
-      prompt: { key: fixed ? 'play.makeNumberSigns' : 'play.makeNumberTarget', params: { target: s.target } },
+      prompt: { key: promptKey, params: { target: s.target } },
       target: s.target,
-      order: s.order,
+      order: input.order,
       tiles: s.tiles.map((value, i) => ({ value, index: i, used: used.has(i), disabled: fixed || done || used.has(i) || !want })),
-      ops: s.ops.map((o, i) => ({ op: o, index: idx.op(s, i), disabled: done || !opEnabled(s, o) })),
-      undo: { index: idx.undo(s), disabled: done || s.expr.length <= start(s).length },
-      clear: { index: idx.clear(s), disabled: done || s.expr.length <= start(s).length },
-      submit: { index: idx.submit(s), disabled: done || !complete(s) },
-      expression: s.expr.map((t) => ({ ...t })),
+      ops: s.ops.map((o, i) => ({
+        op: o,
+        index: idx.op(s, i),
+        disabled: done || !opEnabled(s, o),
+        selected: fixed && o === '²' ? input.squares[input.squareTile] : isBinary(o) && (fixed || chosen !== undefined) ? chosen === o : undefined,
+      })),
+      undo: { index: idx.undo(s), disabled: done || s.undoStack.length === 0 },
+      clear: { index: idx.clear(s), disabled: done || s.undoStack.length === 0 },
+      submit: { index: idx.submit(s), disabled: done || !ready },
+      equation: equationParts(s, ready, done),
       tries: { left: Math.max(0, s.triesLeft), total: s.tries },
       locked: done,
-    }
-    if (s.preview && s.expr.length > 0 && !want && openBrackets(s.expr) === 0) {
-      const v = evaluate(s.expr)
-      if (v) view.preview = formatFrac(v)
     }
     if (s.lastValue !== null) view.lastValue = s.lastValue
     if (done && !s.solved) {
@@ -1085,16 +1221,17 @@ export const makeNumber: BrainGameDef<MakeNumberState> = {
     }
     return view
   },
-  signature: (s) => signature(s.order, s.tiles, s.target),
+  signature: (s) => signature(s.input.order, s.tiles, s.target),
   solution(s) {
     if (over(s)) return null
+    if (s.input.order === 'fixed') return fixedSolution(s, s.input)
+    const { tokens, signSlot } = s.input
     const tokenIndex = (t: MakeToken) => (t.kind === 'num' ? t.tile : idx.op(s, s.ops.indexOf(t.op)))
     const same = (a: MakeToken, b: MakeToken) => (a.kind === 'num' ? b.kind === 'num' && a.tile === b.tile : b.kind === 'op' && a.op === b.op)
-    const prefix = s.expr.length <= s.witness.length && s.expr.every((t, i) => same(t, s.witness[i]))
-    const from = prefix ? s.expr.length : start(s).length
-    // Fixed order: only the signs are tapped (each brings its tile).
-    const rest = s.witness.slice(from).filter((t) => s.order === 'any' || t.kind === 'op').map(tokenIndex)
-    return [...(prefix ? [] : [idx.clear(s)]), ...rest, idx.submit(s)]
+    const prefix = tokens.length <= s.witness.length && tokens.every((t, i) => same(t, s.witness[i]))
+    const reset = !prefix ? [idx.clear(s)] : signSlot !== null ? [idx.slot(s, signSlot)] : []
+    const rest = s.witness.slice(prefix ? tokens.length : 0).map(tokenIndex)
+    return [...reset, ...rest, idx.submit(s)]
   },
   mechanics: (s) => s.tags,
   maxLevel: () => MAKE_NUMBER_MAX_LEVEL,

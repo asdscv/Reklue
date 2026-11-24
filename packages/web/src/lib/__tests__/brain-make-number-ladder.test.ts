@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { createRng, DEFAULT_CONTEXT, type MakeNumberView } from '@reklue/shared/lib/brain-games'
-import { eachTree, evaluate, MAKE_NUMBER_MAX_LEVEL, makeNumber, makeNumberFractionPuzzles } from '@reklue/shared/lib/brain-games/games/make-number'
+import { createRng, DEFAULT_CONTEXT, type MakeNumberView, type MakeToken } from '@reklue/shared/lib/brain-games'
+import { eachTree, evaluate, MAKE_NUMBER_MAX_LEVEL, makeNumber, makeNumberFractionPuzzles, type MakeNumberState } from '@reklue/shared/lib/brain-games/games/make-number'
+
+const viewOf = (s: MakeNumberState) => makeNumber.view(s) as MakeNumberView
+const equation = (s: MakeNumberState) => viewOf(s).equation.map((part) => part.text).join(' ')
 
 describe('Make the Number: editing and recovery', () => {
   it('an unfinished or wrong expression can be undone, cleared and solved at every level', () => {
@@ -38,8 +41,47 @@ describe('Make the Number: editing and recovery', () => {
       s = makeNumber.tap(s, v.ops.find((o) => o.op === '+')!.index)
       expect(makeNumber.tap(s, 0)).toBe(s)
       s = makeNumber.tap(s, 1)
-      expect(s.expr.filter((t) => t.kind === 'num')).toHaveLength(2)
+      expect(s.input.order === 'any' && s.input.tokens.filter((t) => t.kind === 'num')).toHaveLength(2)
     }
+  })
+
+  it('fills fixed slots out of order, changes earlier signs, and undoes just the last edit', () => {
+    let s = makeNumber.create(4, createRng(8), DEFAULT_CONTEXT)
+    const [a, b, c] = s.tiles
+    const initial = viewOf(s)
+    const [first, second] = initial.equation.filter((part) => part.control !== undefined)
+    const choose = (sign: string) => { s = makeNumber.tap(s, initial.ops.find((o) => o.op === sign)!.index) }
+    s = makeNumber.tap(s, second.index)
+    choose('×')
+    expect(equation(s)).toBe(`${a} □ ${b} × ${c} = ${s.target}`)
+    expect(viewOf(s).submit.disabled).toBe(true)
+    choose('+')
+    expect(equation(s)).toBe(`${a} + ${b} × ${c} = ${s.target}`)
+    s = makeNumber.tap(s, first.index)
+    choose('−')
+    expect(equation(s)).toBe(`${a} − ${b} × ${c} = ${s.target}`)
+    expect(viewOf(s).tries.left).toBe(initial.tries.total)
+    s = makeNumber.tap(s, initial.undo.index)
+    expect(equation(s)).toBe(`${a} + ${b} × ${c} = ${s.target}`)
+    s = makeNumber.tap(s, initial.clear.index)
+    expect(equation(s)).toBe(`${a} □ ${b} □ ${c} = ${s.target}`)
+  })
+
+  it('changes a sign in a free-order bracket group without changing the rest of the expression', () => {
+    let s = makeNumber.create(13, createRng(8), DEFAULT_CONTEXT)
+    const [a, b, c] = s.tiles
+    const initial = viewOf(s)
+    const sign = (op: string) => initial.ops.find((o) => o.op === op)!.index
+    for (const step of [sign('('), 0, sign('+'), 1, sign(')'), sign('×'), 2]) s = makeNumber.tap(s, step)
+    expect(equation(s)).toBe(`( ${a} + ${b} ) × ${c} = ${s.target}`)
+    expect(viewOf(s).submit.disabled).toBe(false)
+    const first = viewOf(s).equation.find((part) => part.control !== undefined)!
+    s = makeNumber.tap(s, first.index)
+    s = makeNumber.tap(s, sign('−'))
+    expect(equation(s)).toBe(`( ${a} − ${b} ) × ${c} = ${s.target}`)
+    expect(viewOf(s).submit.disabled).toBe(false)
+    s = makeNumber.tap(s, initial.undo.index)
+    expect(equation(s)).toBe(`( ${a} + ${b} ) × ${c} = ${s.target}`)
   })
 
   it('an answer built through the public buttons retains exact rational values until submission', () => {
@@ -47,7 +89,7 @@ describe('Make the Number: editing and recovery', () => {
     for (let seed = 1; seed <= 80; seed++) {
       let s = makeNumber.create(21, createRng(seed), DEFAULT_CONTEXT)
       for (const tap of makeNumber.solution(s)!.slice(0, -1)) s = makeNumber.tap(s, tap)
-      expect(evaluate(s.expr)).toEqual({ n: s.target, d: 1 })
+      expect(s.input.order === 'any' && evaluate(s.input.tokens)).toEqual({ n: s.target, d: 1 })
       if (s.kind === 'fraction') fractions++
       s = makeNumber.tap(s, (makeNumber.view(s) as MakeNumberView).submit.index)
       expect(makeNumber.outcome(s)?.correct).toBe(true)
@@ -69,14 +111,27 @@ describe('Make the Number: square operator', () => {
       expect(s.witness.some((t) => t.kind === 'op' && t.op === '²')).toBe(true)
       const square = (makeNumber.view(s) as MakeNumberView).ops.find((x) => x.op === '²')!
       s = makeNumber.tap(s, square.index)
-      expect(s.expr.filter((t) => t.kind === 'num')).toHaveLength(1)
-      expect(makeNumber.tap(s, square.index)).toBe(s)
-      expect((makeNumber.view(s) as MakeNumberView).ops.find((x) => x.op === '²')!.disabled).toBe(true)
+      expect(equation(s)).toBe(`${s.tiles[0]}² □ ${s.tiles[1]} = ${s.target}`)
+      expect(viewOf(s).ops.find((x) => x.op === '²')?.selected).toBe(true)
+      expect(equation(makeNumber.tap(s, square.index))).toBe(`${s.tiles[0]} □ ${s.tiles[1]} = ${s.target}`)
       s = makeNumber.tap(s, (makeNumber.view(s) as MakeNumberView).undo.index)
-      expect(s.expr).toEqual([n(s.tiles[0], 0)])
+      expect(equation(s)).toBe(`${s.tiles[0]} □ ${s.tiles[1]} = ${s.target}`)
       for (const tap of makeNumber.solution(s)!) s = makeNumber.tap(s, tap)
       expect(makeNumber.outcome(s)?.correct).toBe(true)
     }
+  })
+
+  it('changing the sign in a single blank preserves a square on either number', () => {
+    let s = makeNumber.create(7, createRng(5), DEFAULT_CONTEXT)
+    const [left, right] = s.tiles
+    const choices = (makeNumber.view(s) as MakeNumberView).ops
+    const square = choices.find((x) => x.op === '²')!.index
+    s = makeNumber.tap(s, square)
+    s = makeNumber.tap(s, choices.find((x) => x.op === '+')!.index)
+    s = makeNumber.tap(s, square)
+    s = makeNumber.tap(s, choices.find((x) => x.op === '×')!.index)
+    expect(equation(s)).toBe(`${left}² × ${right}² = ${s.target}`)
+    expect(viewOf(s).tries.left).toBe(3)
   })
 
   it('never offers or requires an unseen blocked square rule', () => {
@@ -96,7 +151,7 @@ describe('Make the Number: mathematical difficulty', () => {
       const s = makeNumber.create(level, createRng(seed), DEFAULT_CONTEXT)
       for (let choice = 0; choice < 4 ** (s.tiles.length - 1); choice++) {
         let code = choice
-        const expr: typeof s.expr = []
+        const expr: MakeToken[] = []
         s.tiles.forEach((value, tile) => {
           if (tile > 0) { expr.push({ kind: 'op', op: ops[code % 4] }); code = Math.floor(code / 4) }
           expr.push({ kind: 'num', value, tile })

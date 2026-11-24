@@ -189,10 +189,10 @@ export const DIFFICULTY_GAMES = {
   makeNumber: widen(makeNumber, {
     foundation(s, rng): MakeNumberState {
       const a = rng.int(0, 2), b = rng.int(1, 2)
-      return { ...s, tiles: [a, b], target: a + b, expr: [{ kind: 'num', value: a, tile: 0 }], witness: [{ kind: 'num', value: a, tile: 0 }, { kind: 'op', op: '+' }, { kind: 'num', value: b, tile: 1 }], preview: true, tries: 5, triesLeft: 5 }
+      return { ...s, tiles: [a, b], target: a + b, witness: [{ kind: 'num', value: a, tile: 0 }, { kind: 'op', op: '+' }, { kind: 'num', value: b, tile: 1 }], tries: 5, triesLeft: 5 }
     },
     extreme(s, d, rng) {
-      if (s.order !== 'any' || !s.ops.includes('(') || !s.ops.includes('×')) return s
+      if (s.input.order !== 'any' || !s.ops.includes('(') || !s.ops.includes('×')) return s
       const tiles = [...s.tiles]
       let witness = [...s.witness], target = s.target
       for (let n = 0; n < Math.floor(d * 2.99); n++) {

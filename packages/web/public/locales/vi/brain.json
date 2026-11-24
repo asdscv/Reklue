@@ -237,7 +237,8 @@
     "submit": "Xác nhận",
     "undo": "Hoàn tác",
     "clear": "Xóa hết",
-    "makeNumberSigns": "Chọn dấu để tạo {{target}}",
+    "makeNumberSigns": "Chọn dấu phép tính để điền vào ô trống",
+    "makeNumberSlots": "Chạm vào ô để điền hoặc đổi dấu phép tính",
     "makeNumberTarget": "Dùng tất cả các số để tạo {{target}}",
     "makeTarget": "Đích {{target}}",
     "makeFixed": "Giữ thứ tự này · chọn dấu",
@@ -245,6 +246,7 @@
     "makeTries_one": "Còn {{count}} lượt",
     "makeTries_other": "Còn {{count}} lượt",
     "makeExpression": "Biểu thức của bạn",
+    "makeSignSlot": "Ô dấu phép tính {{position}}",
     "makeValue": "Biểu thức này bằng {{value}}. Hãy sửa lại.",
     "mazeRunGo": "Vẽ đường đến lá cờ",
     "mazeRunKeys_one": "Nhặt {{count}} chìa theo thứ tự rồi đến cờ",
@@ -632,7 +634,7 @@
       },
       "divide": {
         "title": "Thêm phép chia",
-        "body": "Dùng thêm ÷. Tính × và ÷ trước, từ trái sang phải."
+        "body": "Phép nhân và phép chia có cùng độ ưu tiên và được tính trước phép cộng và phép trừ. Khi chúng đứng liên tiếp, tính từ trái sang phải. Ví dụ, 12 ÷ 2 × 3 = 6 × 3 = 18."
       },
       "anyOrder": {
         "title": "Đổi thứ tự số",

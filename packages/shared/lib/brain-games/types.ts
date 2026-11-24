@@ -248,14 +248,24 @@ export interface CodeBreakView {
   solved?: boolean
 }
 
-export type MakeOp = '+' | '−' | '×' | '÷' | '²' | '(' | ')'
+export type MakeBinaryOp = '+' | '−' | '×' | '÷'
+export type MakeOp = MakeBinaryOp | '²' | '(' | ')'
 
 export type MakeToken = { kind: 'num'; value: number; tile: number } | { kind: 'op'; op: MakeOp }
+
+export type MakeEquationPart = { text: string; control?: never } | {
+  text: string
+  control: 'sign' | 'tile'
+  index: number
+  position: number
+  selected: boolean
+  disabled: boolean
+}
 
 /**
  * Make the Number (숫자 만들기): build an expression that comes to `target`, every tile used exactly
  * once, by tapping tiles and operators. Judged in exact rational arithmetic (games/make-number.ts
- * evaluate) — no float error, × and ÷ before + and −, brackets first. Buttons the expression cannot
+ * evaluate) — brackets and squares before × and ÷, then + and −. Buttons the expression cannot
  * take next are disabled (a number after a number, `)` with nothing open). A wrong submit costs a
  * try and leaves the expression to fix; out of tries or time, the trial is over.
  */
@@ -264,23 +274,20 @@ export interface MakeNumberView {
   prompt: PromptView
   target: number
   /**
-   * 'fixed' (L1-9): the numbers stay in the order shown and place themselves — the expression starts
-   * with the first one, and each sign tapped brings the next (draw it as `8 □ 3 □ 4 = 9`, the tiles
-   * never tappable). 'any' (L10+): tap tiles and operators in any order.
+   * 'fixed' (L1-9): the numbers stay in order and the signs fill editable blanks.
+   * 'any' (L10+): place tiles and operators, and tap any placed binary sign to change it.
    */
   order: 'fixed' | 'any'
-  /** `disabled`: used already, or the expression wants an operator next (always, in fixed order). */
+  /** The number keypad for free-order play. Fixed-order numbers appear in the equation. */
   tiles: { value: number; index: number; used: boolean; disabled: boolean }[]
-  /** The operators this level offers: + − first, × ÷ and brackets as their rules arrive. */
-  ops: { op: MakeOp; index: number; disabled: boolean }[]
+  /** The available operators. The current choice is marked when editing a sign. */
+  ops: { op: MakeOp; index: number; disabled: boolean; selected?: boolean }[]
   undo: { index: number; disabled: boolean }
   clear: { index: number; disabled: boolean }
   /** Enabled once every tile is used and the expression is complete. */
   submit: { index: number; disabled: boolean }
-  /** What has been tapped so far. */
-  expression: MakeToken[]
-  /** The complete expression's exact value ('22', '3/4') — low levels only, as a help. */
-  preview?: string
+  /** The goal equation, including any editable signs, with the target on the right. */
+  equation: MakeEquationPart[]
   /** Submits left in this trial (dots, never hearts). */
   tries: { left: number; total: number }
   /** After a wrong submit: what that expression came to ('22'). */

@@ -237,7 +237,8 @@
     "submit": "Confirmar",
     "undo": "Deshacer",
     "clear": "Limpiar",
-    "makeNumberSigns": "Elige los signos para crear {{target}}",
+    "makeNumberSigns": "Completa los espacios con los signos",
+    "makeNumberSlots": "Toca el espacio que quieras completar o cambiar",
     "makeNumberTarget": "Usa todos los números para crear {{target}}",
     "makeTarget": "Objetivo {{target}}",
     "makeFixed": "Mantén el orden y elige los signos",
@@ -245,6 +246,7 @@
     "makeTries_one": "Quedan {{count}} intentos",
     "makeTries_other": "Quedan {{count}} intentos",
     "makeExpression": "Tu expresión",
+    "makeSignSlot": "Espacio de operación {{position}}",
     "makeValue": "Esta expresión da {{value}}. Prueba a cambiarla.",
     "mazeRunGo": "Traza un camino hasta la bandera",
     "mazeRunKeys_one": "Recoge {{count}} llaves en orden y llega a la bandera",
@@ -632,7 +634,7 @@
       },
       "divide": {
         "title": "Añadimos la división",
-        "body": "Usa también ÷. Resuelve × y ÷ primero, de izquierda a derecha."
+        "body": "La multiplicación y la división tienen la misma prioridad y se calculan antes que la suma y la resta. Si aparecen seguidas, calcula de izquierda a derecha. Por ejemplo, 12 ÷ 2 × 3 = 6 × 3 = 18."
       },
       "anyOrder": {
         "title": "Elige el orden",
