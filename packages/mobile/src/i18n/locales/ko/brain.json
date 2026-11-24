@@ -7,6 +7,7 @@
     "title": "오늘의 훈련",
     "desc": "게임 {{count}}가지 · 약 {{minutes}}분",
     "start": "오늘의 훈련 시작",
+    "shuffle": "게임 랜덤 변경",
     "week": "이번 주 {{done}}/{{goal}}회",
     "weekDone": "이번 주 목표 달성",
     "course": "기본 과정 {{done}}/{{total}}",

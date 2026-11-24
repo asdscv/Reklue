@@ -7,6 +7,7 @@
     "title": "Bài luyện hôm nay",
     "desc": "{{count}} trò chơi · khoảng {{minutes}} phút",
     "start": "Bắt đầu bài luyện hôm nay",
+    "shuffle": "Đổi trò chơi ngẫu nhiên",
     "week": "Tuần này {{done}}/{{goal}}",
     "weekDone": "Đã đạt mục tiêu tuần",
     "course": "Khóa cơ bản {{done}}/{{total}}",

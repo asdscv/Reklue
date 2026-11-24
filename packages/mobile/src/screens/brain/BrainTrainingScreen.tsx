@@ -12,12 +12,14 @@ import {
   courseStatus,
   displayLevel,
   localDayKey,
+  plannedMinutes,
   weekProgress,
   type AchievementId,
   type BrainGameId,
   type PlanSlot,
 } from '@reklue/shared/lib/brain-games'
 import { useTodaysTraining, type TrainingTotals } from '@reklue/shared/hooks/useTodaysTraining'
+import { useTrainingLineup } from '@reklue/shared/hooks/useTrainingLineup'
 import type { RoundStats } from '@reklue/shared/hooks/useBrainRound'
 import { useBrainStore } from '@reklue/shared/stores/brain-store'
 import { RoundView } from '../../components/brain/RoundView'
@@ -43,10 +45,16 @@ export function BrainTrainingScreen() {
 }
 
 function Training() {
-  const { t } = useTranslation('brain')
   const navigation = useNavigation()
-  const s = useTodaysTraining()
-  const [stage, setStage] = useState<'lineup' | 'intro' | 'play'>('lineup')
+  const [slots, setSlots] = useState<PlanSlot[] | null>(null)
+  const leave = useCallback(() => navigation.goBack(), [navigation])
+  return slots ? <TrainingSession slots={slots} onClose={leave} /> : <Lineup onStart={setSlots} onClose={leave} />
+}
+
+function TrainingSession({ slots, onClose }: { slots: PlanSlot[]; onClose: () => void }) {
+  const { t } = useTranslation('brain')
+  const s = useTodaysTraining(slots)
+  const [stage, setStage] = useState<'intro' | 'play'>('intro')
   const [askingStop, setAskingStop] = useState(false)
   const { onRoundOver, continueSession } = s
   const gameId = s.slot.gameId
@@ -72,7 +80,6 @@ function Training() {
   )
   const games = s.slots.map((slot) => slot.gameId)
   const stepsLabel = t('training.title')
-  const leave = useCallback(() => navigation.goBack(), [navigation])
 
   // On an intro mid-session, Android's back button asks first (a second press keeps playing) — a
   // stop there leaves the session uncounted. The line-up and the end screen just leave; a round
@@ -96,14 +103,11 @@ function Training() {
       keepLabel={t('play.keepPlaying')}
       onKeep={() => setAskingStop(false)}
       stopLabel={t('play.stopNow')}
-      onStop={leave}
+      onStop={onClose}
       stopTestID="brain-training-stop"
     />
   ) : null
 
-  if (s.phase === 'playing' && stage === 'lineup') {
-    return <Lineup slots={s.slots} minutes={s.plannedMinutes} onStart={() => setStage('intro')} onClose={leave} />
-  }
   if (s.phase === 'playing' && stage === 'intro') {
     return (
       <GameIntro
@@ -153,7 +157,7 @@ function Training() {
       achievements={achievements}
       tierUps={earned.tierUps}
       placed={placed}
-      onHome={leave}
+      onHome={onClose}
     />
   )
 }
@@ -161,11 +165,10 @@ function Training() {
 /** Per game: where its climb started once placement found it, or null while placement is unfinished. */
 type PlacedLevels = Partial<Record<BrainGameId, number | null>>
 
-/** The session's line-up before it starts: four games, about how long, one start. */
-function Lineup({ slots, minutes, onStart, onClose }: { slots: PlanSlot[]; minutes: number; onStart: () => void; onClose: () => void }) {
+function Lineup({ onStart, onClose }: { onStart: (slots: PlanSlot[]) => void; onClose: () => void }) {
   const { t } = useTranslation('brain')
-  const progress = useBrainStore((st) => st.progress)
-  const week = weekProgress(progress, localDayKey())
+  const { plan: { slots }, progress, today, shuffle } = useTrainingLineup()
+  const week = weekProgress(progress, today)
   const rise = useMotion('rise', 'lineup')
   return (
     <GameCanvas theme={TRAINING_THEME} testID="brain-training-lineup">
@@ -180,12 +183,12 @@ function Lineup({ slots, minutes, onStart, onClose }: { slots: PlanSlot[]; minut
                 {t('training.title')}
               </Text>
               <Text style={styles.lead} maxFontSizeMultiplier={1.5}>
-                {t('training.desc', { minutes, count: slots.length })}
+                {t('training.desc', { minutes: plannedMinutes(slots), count: slots.length })}
               </Text>
             </View>
             <WeekRing done={week.done} goal={week.goal} label={t('training.week', { done: week.done, goal: week.goal })} color={TRAINING_THEME.accent} />
           </Animated.View>
-          <View style={styles.list} accessibilityLabel={t('training.lineup')}>
+          <View style={styles.list} accessibilityLiveRegion="polite" accessibilityLabel={t('training.lineup')}>
             {slots.map((slot, i) => (
               <LineupRow key={i} index={i} slot={slot} />
             ))}
@@ -195,7 +198,8 @@ function Lineup({ slots, minutes, onStart, onClose }: { slots: PlanSlot[]; minut
           </Text>
         </ScrollView>
         <View style={styles.bottomBar}>
-          <CanvasButton icon="play" label={t('training.start')} onPress={onStart} theme={TRAINING_THEME} testID="brain-training-begin" />
+          <CanvasButton icon="play" label={t('training.start')} onPress={() => onStart(slots)} theme={TRAINING_THEME} testID="brain-training-begin" />
+          <CanvasButton variant="glass" icon="shuffle" label={t('training.shuffle')} onPress={shuffle} theme={TRAINING_THEME} testID="brain-training-shuffle" />
         </View>
       </View>
     </GameCanvas>
@@ -400,7 +404,7 @@ const styles = StyleSheet.create({
   rowTime: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rowTimeText: { color: 'rgba(255,255,255,0.75)', fontSize: 14 },
   dose: { color: 'rgba(255,255,255,0.75)', fontSize: 16, lineHeight: 23 },
-  bottomBar: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
+  bottomBar: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, gap: 8 },
   endContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 24, gap: 18, width: '100%', maxWidth: 480, alignSelf: 'center' },
   endHead: { alignItems: 'center', gap: 12 },
   card: { borderRadius: 18, backgroundColor: FX.glass, borderWidth: 1, borderColor: FX.glassBorder, padding: 16, gap: 12 },

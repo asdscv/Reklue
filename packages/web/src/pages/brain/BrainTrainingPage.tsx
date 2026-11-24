@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { X, Play, Clock, Target, ListChecks, ArrowRight, Home } from 'lucide-react'
+import { X, Play, Clock, Target, ListChecks, ArrowRight, Home, Shuffle } from 'lucide-react'
 import { formatCount } from '@reklue/shared/lib/format-number'
-import { GAME_THEMES, TRAINING_THEME, brainGame, courseStatus, displayLevel, localDayKey, weekProgress, type AchievementId, type BrainGameId } from '@reklue/shared/lib/brain-games'
+import { GAME_THEMES, TRAINING_THEME, brainGame, courseStatus, displayLevel, localDayKey, plannedMinutes, weekProgress, type AchievementId, type BrainGameId, type PlanSlot } from '@reklue/shared/lib/brain-games'
 import { useTodaysTraining } from '@reklue/shared/hooks/useTodaysTraining'
+import { useTrainingLineup } from '@reklue/shared/hooks/useTrainingLineup'
 import type { RoundStats } from '@reklue/shared/hooks/useBrainRound'
 import { useBrainStore } from '@reklue/shared/stores/brain-store'
 import { useTrackEvent } from '../../hooks/useTrackEvent'
@@ -26,11 +27,17 @@ export function BrainTrainingPage() {
 }
 
 function Training() {
+  const navigate = useNavigate()
+  const [slots, setSlots] = useState<PlanSlot[] | null>(null)
+  return slots ? <TrainingSession slots={slots} /> : <Lineup onStart={setSlots} onClose={() => navigate('/brain')} />
+}
+
+function TrainingSession({ slots }: { slots: PlanSlot[] }) {
   const { t } = useTranslation('brain')
-  const s = useTodaysTraining()
+  const s = useTodaysTraining(slots)
   const navigate = useNavigate()
   const trackEvent = useTrackEvent()
-  const [stage, setStage] = useState<'lineup' | 'intro' | 'play'>('lineup')
+  const [stage, setStage] = useState<'intro' | 'play'>('intro')
   const [askingStop, setAskingStop] = useState(false)
   // What the session's rounds earned on the way — told once, at the session's end (no results
   // screen between rounds here).
@@ -66,9 +73,6 @@ function Training() {
     <StopSheet onKeep={() => setAskingStop(false)} onStop={() => navigate('/brain')} />
   )
 
-  if (s.phase === 'playing' && stage === 'lineup') {
-    return <Lineup games={games} slotMinutes={s.slots.map((slot) => slot.minutes)} minutes={s.plannedMinutes} onStart={() => setStage('intro')} onClose={() => navigate('/brain')} />
-  }
   if (s.phase === 'playing' && stage === 'intro') {
     return (
       <>
@@ -109,45 +113,53 @@ function Training() {
 /** Per game: where its climb started once placement found it, or null while placement is unfinished. */
 type PlacedLevels = Partial<Record<BrainGameId, number | null>>
 
-/** The session's line-up before it starts: four games, about how long, one start. */
-function Lineup({ games, slotMinutes, minutes, onStart, onClose }: { games: BrainGameId[]; slotMinutes: number[]; minutes: number; onStart: () => void; onClose: () => void }) {
+function Lineup({ onStart, onClose }: { onStart: (slots: PlanSlot[]) => void; onClose: () => void }) {
   const { t } = useTranslation('brain')
-  const progress = useBrainStore((st) => st.progress)
-  const week = weekProgress(progress, localDayKey())
+  const { plan: { slots }, progress, today, shuffle } = useTrainingLineup()
+  const week = weekProgress(progress, today)
   const start = useRef<HTMLButtonElement>(null)
   useEffect(() => focusIfKeyboard(start.current), [])
   return (
     <GameCanvas theme={TRAINING_THEME} testId="brain-training-lineup">
       <div className="max-w-xl mx-auto px-4 pb-10">
-        <header className="flex items-center pt-4 min-h-16">
-          <button type="button" onClick={onClose} className="flex items-center gap-1.5 min-h-11 px-3 rounded-xl bg-white/10 hover:bg-white/20 border-none text-white text-base cursor-pointer">
+        <header className="flex items-center justify-between gap-2 pt-4 min-h-16">
+          <button type="button" onClick={onClose} className="flex shrink-0 items-center gap-1.5 min-h-11 px-3 rounded-xl bg-white/10 hover:bg-white/20 border-none text-white text-base cursor-pointer">
             <X className="w-5 h-5" aria-hidden="true" />
             {t('play.back')}
+          </button>
+          <button
+            type="button"
+            onClick={shuffle}
+            className="flex items-center justify-center gap-2 min-h-11 rounded-xl bg-white/10 px-3 text-base font-semibold text-white ring-1 ring-inset ring-white/25 cursor-pointer hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white"
+            data-testid="brain-training-shuffle"
+          >
+            <Shuffle className="w-5 h-5 shrink-0" aria-hidden="true" />
+            {t('training.shuffle')}
           </button>
         </header>
         <section className="bfx-rise flex items-center justify-between gap-4 pt-4">
           <div>
             <h1 className="text-4xl font-extrabold tracking-tight">{t('training.title')}</h1>
-            <p className="mt-2 text-lg text-white/80">{t('training.desc', { minutes, count: games.length })}</p>
+            <p className="mt-2 text-lg text-white/80">{t('training.desc', { minutes: plannedMinutes(slots), count: slots.length })}</p>
           </div>
           <WeekRing done={week.done} goal={week.goal} label={t('training.week', { done: week.done, goal: week.goal })} color={TRAINING_THEME.accent} />
         </section>
-        <ol className="mt-8 space-y-3" aria-label={t('training.lineup')}>
-          {games.map((g, i) => {
+        <ol className="mt-8 space-y-3" aria-label={t('training.lineup')} aria-live="polite">
+          {slots.map(({ gameId: g, minutes }, i) => {
             const Icon = BRAIN_ICONS[brainGame(g).icon]
             return (
-              <li key={i} className="bfx-rise flex items-center gap-4 p-3 rounded-2xl bg-white/[0.07] border border-white/10" style={{ animationDelay: `${i * 70}ms` }}>
-                <span className="w-8 text-center text-lg font-black text-white/60 tabular-nums">{i + 1}</span>
-                <span className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ background: cardBackground(GAME_THEMES[g]) }}>
-                  {Icon && <Icon className="w-7 h-7 text-white" aria-hidden="true" />}
+              <li key={i} className="bfx-rise flex items-center gap-2 p-3 rounded-2xl bg-white/[0.07] border border-white/10 sm:gap-4" style={{ animationDelay: `${i * 70}ms` }}>
+                <span className="w-5 shrink-0 text-center text-lg font-black text-white/60 tabular-nums sm:w-8">{i + 1}</span>
+                <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 sm:w-14 sm:h-14 sm:rounded-2xl" style={{ background: cardBackground(GAME_THEMES[g]) }}>
+                  {Icon && <Icon className="w-5 h-5 text-white sm:w-7 sm:h-7" aria-hidden="true" />}
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-lg font-bold truncate">{t(`games.${g}.name`)}</span>
+                  <span className="block text-base font-bold sm:text-lg">{t(`games.${g}.name`)}</span>
                   <span className="block text-sm text-white/75 truncate">{t(`games.${g}.desc`)}</span>
                 </span>
                 <span className="flex items-center gap-1 text-sm text-white/75 shrink-0">
                   <Clock className="w-4 h-4" aria-hidden="true" />
-                  {slotMinutes[i] % 1 ? t('training.minutesSeconds', { m: Math.floor(slotMinutes[i]), s: Math.round((slotMinutes[i] % 1) * 60) }) : t('training.minutesShort', { value: slotMinutes[i] })}
+                  {minutes % 1 ? t('training.minutesSeconds', { m: Math.floor(minutes), s: Math.round((minutes % 1) * 60) }) : t('training.minutesShort', { value: minutes })}
                 </span>
               </li>
             )
@@ -157,12 +169,12 @@ function Lineup({ games, slotMinutes, minutes, onStart, onClose }: { games: Brai
         <button
           ref={start}
           type="button"
-          onClick={onStart}
-          className="mt-6 w-full min-h-16 flex items-center justify-center gap-2 rounded-2xl bg-white text-xl font-extrabold border-none cursor-pointer shadow-[0_14px_40px_rgba(0,0,0,0.35)] hover:scale-[1.01] active:scale-[0.98] transition-transform"
+          onClick={() => onStart(slots)}
+          className="mt-6 w-full min-h-16 flex items-center justify-center gap-2 rounded-2xl bg-white px-3 text-xl font-extrabold border-none cursor-pointer shadow-[0_14px_40px_rgba(0,0,0,0.35)] hover:scale-[1.01] active:scale-[0.98] transition-transform"
           style={{ color: TRAINING_THEME.cardTo }}
           data-testid="brain-training-begin"
         >
-          <Play className="w-6 h-6 fill-current" aria-hidden="true" />
+          <Play className="w-6 h-6 shrink-0 fill-current" aria-hidden="true" />
           {t('training.start')}
         </button>
       </div>
