@@ -37,6 +37,7 @@ export function RoundView({
   const ref = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState<number | null>(null)
   const [counting, setCounting] = useState(countdown)
+  const responsiveBoard = gameId === 'cardRecall' || gameId === 'makeNumber'
   // The CONTENT width: the measured box has no padding of its own (clientWidth counts padding,
   // and a padded measure let a 6-column grid overflow a 390px phone by its gutters).
   useLayoutEffect(() => {
@@ -44,12 +45,12 @@ export function RoundView({
     if (!content) return
     const measure = () => setWidth(Math.min(content.clientWidth, 560))
     measure()
-    // Card Recall can reflow its keys without changing the dealt cards or starting a new round.
-    if (gameId !== 'cardRecall' || typeof ResizeObserver === 'undefined') return
+    // These boards can reflow their controls while keeping the puzzle and input in play.
+    if (!responsiveBoard || typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(measure)
     observer.observe(content)
     return () => observer.disconnect()
-  }, [gameId])
+  }, [gameId, responsiveBoard])
   const sound = useBrainStore((s) => s.progress.settings.sound)
   useEffect(() => {
     sfx.enabled = sound
@@ -64,7 +65,7 @@ export function RoundView({
               <Countdown goLabel={t('play.go')} onDone={() => setCounting(false)} />
             </>
           ) : (
-            <Round gameId={gameId} onOver={onOver} caption={caption} width={width} theme={theme} timeBudgetMs={timeBudgetMs} />
+            <Round gameId={gameId} onOver={onOver} caption={caption} width={width} theme={theme} timeBudgetMs={timeBudgetMs} responsiveBoard={responsiveBoard} />
           )}
         </div>
       </div>
@@ -92,7 +93,7 @@ interface Pop {
   text: string
 }
 
-function Round({ gameId, onOver, caption, width, theme, timeBudgetMs }: { gameId: BrainGameId; onOver: (stats: RoundStats) => void; caption?: string; width: number; theme: GameTheme; timeBudgetMs?: number }) {
+function Round({ gameId, onOver, caption, width, theme, timeBudgetMs, responsiveBoard }: { gameId: BrainGameId; onOver: (stats: RoundStats) => void; caption?: string; width: number; theme: GameTheme; timeBudgetMs?: number; responsiveBoard: boolean }) {
   const { t } = useTranslation('brain')
   // The board's columns from its width, its rows from the window's height (a portrait Flash Grid).
   const [platform] = useState(() => webPlatform(width, maxColsFor(width)))
@@ -259,12 +260,12 @@ function Round({ gameId, onOver, caption, width, theme, timeBudgetMs }: { gameId
 
   return (
     <>
-      <header className="flex items-center gap-2 pt-4 pb-1 min-h-[72px]">
+      <header className={`${responsiveBoard ? 'grid grid-cols-[minmax(44px,1fr)_minmax(0,3fr)_minmax(44px,1fr)]' : 'flex'} items-center gap-2 pt-4 pb-1 min-h-[72px]`}>
         <button
           type="button"
           onClick={askStop}
           aria-label={t('play.stop')}
-          className="flex items-center gap-1.5 min-h-11 min-w-11 px-3 rounded-xl bg-white/10 hover:bg-white/20 border-none text-white text-base cursor-pointer"
+          className="flex items-center gap-1.5 min-h-11 min-w-11 justify-self-start px-3 rounded-xl bg-white/10 hover:bg-white/20 border-none text-white text-base cursor-pointer"
           data-testid="brain-finish"
         >
           <X className="w-5 h-5" aria-hidden="true" />
@@ -284,7 +285,7 @@ function Round({ gameId, onOver, caption, width, theme, timeBudgetMs }: { gameId
           onClick={r.paused ? r.resume : r.pause}
           disabled={!r.canPause}
           aria-label={r.paused ? t('play.resume') : t('play.pause')}
-          className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 border-none text-white cursor-pointer disabled:opacity-40"
+          className="w-11 h-11 flex items-center justify-center justify-self-end rounded-xl bg-white/10 hover:bg-white/20 border-none text-white cursor-pointer disabled:opacity-40"
           data-testid="brain-pause"
         >
           {r.paused ? <Play className="w-5 h-5" aria-hidden="true" /> : <Pause className="w-5 h-5" aria-hidden="true" />}
@@ -404,7 +405,7 @@ function Round({ gameId, onOver, caption, width, theme, timeBudgetMs }: { gameId
         {(!r.reviewPending || r.view.kind === 'cardRecall') && <p key={`${r.trialId}-${r.view.kind === 'cardRecall' && r.view.input ? 'recall' : r.view.prompt.key}`} className="bfx-rise text-xl font-semibold text-center min-h-8" data-testid="brain-prompt">
           {t(r.view.prompt.key, r.view.prompt.params)}
         </p>}
-        <div className="relative w-full">
+        <div className="relative w-full" style={responsiveBoard ? { maxWidth: width } : undefined}>
           {/* Sibling keys share one namespace: trial ids and effect ids both count from 1. */}
           <BrainBoard
             key={`board-${r.trialId}`}
