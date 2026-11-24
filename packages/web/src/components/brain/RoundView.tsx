@@ -40,8 +40,16 @@ export function RoundView({
   // The CONTENT width: the measured box has no padding of its own (clientWidth counts padding,
   // and a padded measure let a 6-column grid overflow a 390px phone by its gutters).
   useLayoutEffect(() => {
-    if (ref.current) setWidth(Math.min(ref.current.clientWidth, 560))
-  }, [])
+    const content = ref.current
+    if (!content) return
+    const measure = () => setWidth(Math.min(content.clientWidth, 560))
+    measure()
+    // Card Recall can reflow its keys without changing the dealt cards or starting a new round.
+    if (gameId !== 'cardRecall' || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(content)
+    return () => observer.disconnect()
+  }, [gameId])
   const sound = useBrainStore((s) => s.progress.settings.sound)
   useEffect(() => {
     sfx.enabled = sound
