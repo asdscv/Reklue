@@ -628,7 +628,11 @@ function reducer(state: State, action: Action): State {
     case 'timeout': {
       if (state.result || state.over || state.paused) return state
       if (action.type === 'timeout' && action.trialId !== state.trialId) return state
-      if (action.type === 'tap' && !def.acceptsInput(state.round)) return state
+      if (action.type === 'tap' && !def.acceptsInput(state.round)) {
+        if (state.gameId !== 'cardRecall') return state
+        const view = def.view(state.round)
+        if (view.kind !== 'cardRecall' || view.preview?.index !== action.index) return state
+      }
       // Input and timer callbacks can reach the reducer in either order at the deadline.
       const limit = trialLimit(state)
       if (limit !== null && state.inputStartedAt !== null && action.now >= state.inputStartedAt + limit) {
@@ -747,7 +751,7 @@ function reducer(state: State, action: Action): State {
 }
 
 function manualReview(s: Pick<State, 'gameId' | 'result'>): boolean {
-  return s.gameId === 'makeNumber' && !!s.result && !s.result.correct && !s.result.void
+  return (s.gameId === 'makeNumber' || s.gameId === 'cardRecall') && !!s.result && !s.result.correct && !s.result.void
 }
 
 /** A missed choice trial whose view shows the worked answer (math's line, a pattern's rule): it stays up longer. */
@@ -1268,7 +1272,7 @@ export function useBrainRound(gameId: BrainGameId, platform: PlatformContext, op
         : null,
     /**
      * On with the next trial now — taken from 500ms after the result: a missed choice trial's worked
-     * answer (`stimulus.reveal`, up 2.4s) or a right pattern's rule. Make the Number waits for Continue.
+     * answer (`stimulus.reveal`, up 2.4s) or a right pattern's rule. Manual reviews wait for Continue.
      */
     skipReveal,
     reviewPending: manualReview(state) && !state.revealSkipped,

@@ -115,7 +115,7 @@
     },
     "cardRecall": {
       "name": "트럼프 카드 기억하기",
-      "desc": "카드의 숫자, 무늬, 자리를 기억해 다시 맞혀요. 난이도가 오르면 공용 카드 5장과 내 카드 2장을 더 짧게 보여줘요."
+      "desc": "카드의 숫자, 무늬, 순서를 기억해 다시 맞혀요. 익숙해지면 한 덱에서 최대 30장을 외워요."
     },
     "mazeRun": {
       "name": "미로 찾기",
@@ -270,12 +270,22 @@
     "makeSquareButton": "제곱 x²",
     "makeSquareHint": "제곱할 숫자를 누르세요. 이미 제곱된 숫자는 누르면 풀려요.",
     "makeAnswer": "정답 예시",
-    "cardRecallMemorize": "카드의 숫자·무늬·자리를 기억하세요",
-    "cardRecallEnter": "카드마다 숫자를 고른 뒤 무늬를 고르세요",
-    "cardRecallCheck": "카드를 눌러 고치거나 확인하세요",
+    "cardRecallMemorize": "카드 {{total}}장을 순서대로 외우세요",
+    "cardRecallStart": "가리고 답하기",
+    "cardRecallPickSuit": "{{position}}번 칸 · {{rank}}의 무늬 고르기",
+    "cardRecallChangeRank": "숫자 바꾸기",
+    "cardRecallSkip": "건너뛰기",
+    "cardRecallEmpty": "빈칸",
+    "cardRecallWrong": "오답",
+    "cardRecallYourAnswer": "내 답 {{card}}",
+    "cardRecallRange": "{{start}}~{{end}}번째 카드",
+    "cardRecallSubmit": "{{answered}}/{{total}} · 채점",
+    "cardRecallEnter": "{{position}}번 칸 · 숫자부터 고르세요",
+    "cardRecallCheck": "입력한 카드를 확인하고 채점하세요",
     "cardRecallResult": "{{total}}장 중 {{correct}}장 맞혔어요",
     "cardRecallCommunity": "공용 카드",
     "cardRecallPrivate": "내 카드",
+    "cardRecallOpponent": "상대 {{number}}",
     "cardRecallPosition": "{{position}}번째 카드",
     "cardRecallSuits": {
       "spades": "스페이드",
@@ -319,6 +329,7 @@
   },
   "intro": {
     "howTo": "이렇게 해요",
+    "cardRecallTip": "카드를 가린 뒤 같은 자리에 답을 넣어요. 7♥를 봤다면 7을 누른 뒤 7♥를 고르세요.",
     "replay": "다시 보기",
     "start": "시작",
     "practiceNote": "처음 몇 문제는 연습이에요. 기회와 점수가 줄지 않아요.",

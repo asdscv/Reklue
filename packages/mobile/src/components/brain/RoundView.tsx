@@ -448,9 +448,9 @@ function Round({
         </View>
 
         <View style={[styles.body, compact && styles.bodyCompact]}>
-          {r.view.difficulty && <Text style={{ textAlign: 'center', fontSize: 14, fontWeight: '600', color: '#FFFFFFCC' }} testID="brain-difficulty-stage">{t(`play.difficulty.${r.view.difficulty}`)}</Text>}
+          {r.view.difficulty && r.view.kind !== 'cardRecall' && <Text style={{ textAlign: 'center', fontSize: 14, fontWeight: '600', color: '#FFFFFFCC' }} testID="brain-difficulty-stage">{t(`play.difficulty.${r.view.difficulty}`)}</Text>}
           {r.view.difficulty === 'extreme' && gameId === 'sequence' && <Text style={{ textAlign: 'center', fontSize: 14, color: '#FFFFFFCC' }}>{t('play.extremeSequence')}</Text>}
-          {!r.reviewPending && <Prompt key={`${r.trialId}-${r.view.prompt.key}`} text={t(r.view.prompt.key, r.view.prompt.params)} compact={compact} />}
+          {(!r.reviewPending || r.view.kind === 'cardRecall') && <Prompt key={`${r.trialId}-${r.view.kind === 'cardRecall' && r.view.input ? 'recall' : r.view.prompt.key}`} text={t(r.view.prompt.key, r.view.prompt.params)} compact={compact} />}
           <View
             style={styles.board}
             onLayout={(e) => {
@@ -464,7 +464,7 @@ function Round({
                 key={`board-${r.trialId}`}
                 view={r.view}
                 onTap={r.tap}
-                onSkipReveal={r.view.kind === 'makeNumber' && !r.reviewPending ? undefined : r.skipReveal}
+                onSkipReveal={(r.view.kind === 'makeNumber' || r.view.kind === 'cardRecall') && !r.reviewPending ? undefined : r.skipReveal}
                 width={boardWidth}
                 height={boardHeight}
                 theme={theme}

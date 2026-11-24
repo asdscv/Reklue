@@ -30,6 +30,7 @@ export function GameIntro({
   steps?: { games: BrainGameId[]; index: number; label: string }
 }) {
   const { t } = useTranslation('brain')
+  const cardRecall = gameId === 'cardRecall'
   const theme = GAME_THEMES[gameId]
   const entry = brainGame(gameId)
   const Icon = BRAIN_ICONS[entry.icon]
@@ -58,6 +59,20 @@ export function GameIntro({
   useEffect(() => {
     focusIfKeyboard(start.current)
   }, [gameId])
+
+  const startButton = (
+    <button
+      ref={start}
+      type="button"
+      onClick={onStart}
+      className={`w-full ${cardRecall ? 'min-h-13' : 'min-h-16'} flex items-center justify-center gap-2 rounded-2xl bg-white text-xl font-extrabold border-none cursor-pointer shadow-[0_14px_40px_rgba(0,0,0,0.35)] hover:scale-[1.01] active:scale-[0.98] transition-transform`}
+      style={{ color: theme.cardTo }}
+      data-testid="brain-intro-start"
+    >
+      <Play className="w-6 h-6 fill-current" aria-hidden="true" />
+      {t('intro.start')}
+    </button>
+  )
 
   return (
     <GameCanvas theme={theme} testId="brain-intro">
@@ -94,26 +109,32 @@ export function GameIntro({
         </header>
 
         <section className="bfx-rise flex flex-col items-center text-center gap-2 pt-2">
-          <div
+          {!cardRecall && <div
             className="w-20 h-20 rounded-[24px] flex items-center justify-center shadow-[0_18px_50px_rgba(0,0,0,0.45)]"
             style={{ background: cardBackground(theme), boxShadow: `0 0 0 1px rgba(255,255,255,0.18) inset, 0 16px 48px ${theme.glow}` }}
           >
             {Icon && <Icon className="w-10 h-10 text-white" strokeWidth={1.75} aria-hidden="true" />}
-          </div>
+          </div>}
           {steps && <p className="text-base font-semibold" style={{ color: theme.accent }}>{t('training.slot', { index: steps.index + 1, total: steps.games.length })}</p>}
-          <h1 className="text-4xl font-extrabold tracking-tight">{t(`games.${gameId}.name`)}</h1>
-          <p className="text-lg text-white/80 max-w-md">{t(`games.${gameId}.desc`)}</p>
-          {played && (
+          <h1 className={`${cardRecall ? 'text-3xl' : 'text-4xl'} font-extrabold tracking-tight`}>{t(`games.${gameId}.name`)}</h1>
+          <p className={`${cardRecall ? 'text-base break-keep' : 'text-lg'} text-white/80 max-w-md`}>{t(`games.${gameId}.desc`)}</p>
+          {played && !cardRecall && (
             <div className="w-full mt-2">
               <TierMeter standing={standing} accent={theme.accent} compact testId="brain-intro-tier" />
             </div>
           )}
         </section>
 
-        <section className="mt-5 space-y-2" aria-labelledby="brain-howto">
+        <section className={`${cardRecall ? 'mt-3' : 'mt-5'} space-y-2`} aria-labelledby="brain-howto">
           <h2 id="brain-howto" className="text-sm font-semibold uppercase tracking-wider text-white/70">{t('intro.howTo')}</h2>
+          {cardRecall && <p className="text-sm leading-relaxed text-white/85 break-keep">{t('intro.cardRecallTip')}</p>}
           <DemoPlayer gameId={gameId} width={width} />
         </section>
+
+        {cardRecall && <div className="mt-3">{startButton}</div>}
+        {cardRecall && played && <div className="mt-4">
+          <TierMeter standing={standing} accent={theme.accent} compact testId="brain-intro-tier" />
+        </div>}
 
         <div className="mt-4 grid grid-cols-3 gap-2">
           {/* No level yet for a game never played or a placement left part-way (n = 0) — not its interim probe level. */}
@@ -136,19 +157,9 @@ export function GameIntro({
         )}
 
         {/* Start stays in reach on short screens: it rides the bottom edge until the page ends. */}
-        <div className="sticky bottom-0 -mx-4 px-4 pt-6 pb-4" style={{ background: `linear-gradient(to top, ${theme.canvasFrom} 55%, transparent)` }}>
-          <button
-            ref={start}
-            type="button"
-            onClick={onStart}
-            className="w-full min-h-16 flex items-center justify-center gap-2 rounded-2xl bg-white text-xl font-extrabold border-none cursor-pointer shadow-[0_14px_40px_rgba(0,0,0,0.35)] hover:scale-[1.01] active:scale-[0.98] transition-transform"
-            style={{ color: theme.cardTo }}
-            data-testid="brain-intro-start"
-          >
-            <Play className="w-6 h-6 fill-current" aria-hidden="true" />
-            {t('intro.start')}
-          </button>
-        </div>
+        {cardRecall ? <div className="h-6" /> : <div className="sticky bottom-0 -mx-4 px-4 pt-6 pb-4" style={{ background: `linear-gradient(to top, ${theme.canvasFrom} 55%, transparent)` }}>
+          {startButton}
+        </div>}
       </div>
     </GameCanvas>
   )

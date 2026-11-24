@@ -115,7 +115,7 @@
     },
     "cardRecall": {
       "name": "扑克牌记忆",
-      "desc": "按位置记住每张牌的点数和花色。难度提高后，需要在更短时间内记住五张公共牌和两张底牌。"
+      "desc": "记住每张牌的点数、花色和顺序。高阶关卡需要记住同一副牌中最多30张牌。"
     },
     "mazeRun": {
       "name": "走迷宫",
@@ -270,12 +270,22 @@
     "makeSquareButton": "平方 x²",
     "makeSquareHint": "点按要平方的数字。点按已平方的数字可取消。",
     "makeAnswer": "正确算式示例",
-    "cardRecallMemorize": "记住每张牌及其位置",
-    "cardRecallEnter": "为每张牌先选点数，再选花色",
-    "cardRecallCheck": "点按牌面进行修改，或确认答案",
+    "cardRecallMemorize": "按顺序记住{{total}}张牌",
+    "cardRecallStart": "盖住牌并作答",
+    "cardRecallPickSuit": "第{{position}}格 · 选{{rank}}的花色",
+    "cardRecallChangeRank": "修改点数",
+    "cardRecallSkip": "跳过",
+    "cardRecallEmpty": "空格",
+    "cardRecallWrong": "答错",
+    "cardRecallYourAnswer": "你的答案 {{card}}",
+    "cardRecallRange": "第{{start}}至{{end}}张牌",
+    "cardRecallSubmit": "{{answered}}/{{total}} · 检查答案",
+    "cardRecallEnter": "第{{position}}格 · 先选点数",
+    "cardRecallCheck": "核对已填的牌，然后检查答案",
     "cardRecallResult": "{{total}} 张牌答对 {{correct}} 张",
     "cardRecallCommunity": "公共牌",
-    "cardRecallPrivate": "底牌",
+    "cardRecallPrivate": "你的底牌",
+    "cardRecallOpponent": "对手 {{number}}",
     "cardRecallPosition": "第 {{position}} 张牌",
     "cardRecallSuits": {
       "spades": "黑桃",
@@ -319,6 +329,7 @@
   },
   "intro": {
     "howTo": "玩法",
+    "cardRecallTip": "牌盖住后，在原来的位置填入答案。如果看到过7♥，先点7，再选7♥。",
     "replay": "再看一遍",
     "start": "开始",
     "practiceNote": "前几题是练习，不扣机会或分数。",

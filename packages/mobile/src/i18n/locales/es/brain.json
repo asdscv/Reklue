@@ -115,7 +115,7 @@
     },
     "cardRecall": {
       "name": "Memoria de cartas",
-      "desc": "Recuerda el valor, el palo y la posición de cada carta. Avanza hasta cinco cartas comunitarias y dos propias con menos tiempo para mirar."
+      "desc": "Recuerda el valor, el palo y el orden de cada carta. En niveles avanzados, memoriza hasta 30 cartas de una baraja."
     },
     "mazeRun": {
       "name": "Laberinto",
@@ -270,12 +270,22 @@
     "makeSquareButton": "Cuadrado x²",
     "makeSquareHint": "Toca un número para elevarlo al cuadrado. Si ya está al cuadrado, tócalo para deshacerlo.",
     "makeAnswer": "Una ecuación correcta",
-    "cardRecallMemorize": "Memoriza cada carta en su posición",
-    "cardRecallEnter": "Elige primero el valor y luego el palo de cada carta",
-    "cardRecallCheck": "Toca una carta para corregirla o confirma",
+    "cardRecallMemorize": "Memoriza {{total}} cartas en orden",
+    "cardRecallStart": "Ocultar y responder",
+    "cardRecallPickSuit": "Casilla {{position}} · Elige el {{rank}} correcto",
+    "cardRecallChangeRank": "Cambiar valor",
+    "cardRecallSkip": "Saltar",
+    "cardRecallEmpty": "Vacía",
+    "cardRecallWrong": "Incorrecta",
+    "cardRecallYourAnswer": "Tu {{card}}",
+    "cardRecallRange": "Cartas {{start}}–{{end}}",
+    "cardRecallSubmit": "{{answered}}/{{total}} · Comprobar",
+    "cardRecallEnter": "Casilla {{position}} · Elige el valor",
+    "cardRecallCheck": "Revisa tus cartas y comprueba las respuestas",
     "cardRecallResult": "{{correct}} de {{total}} cartas correctas",
     "cardRecallCommunity": "Cartas comunitarias",
-    "cardRecallPrivate": "Cartas propias",
+    "cardRecallPrivate": "Tu mano",
+    "cardRecallOpponent": "Rival {{number}}",
     "cardRecallPosition": "Carta {{position}}",
     "cardRecallSuits": {
       "spades": "Picas",
@@ -319,6 +329,7 @@
   },
   "intro": {
     "howTo": "Cómo se juega",
+    "cardRecallTip": "Cuando se oculten las cartas, rellena las mismas casillas. Si viste 7♥, toca el 7 y elige 7♥.",
     "replay": "Ver de nuevo",
     "start": "Empezar",
     "practiceNote": "Los primeros ejercicios son de práctica. No pierdes oportunidades ni puntos.",
