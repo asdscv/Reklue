@@ -474,6 +474,10 @@ describe('Make the Number (숫자 만들기)', () => {
     expect(v([n(1, 0), o('÷'), n(3, 1), o('+'), n(1, 2), o('÷'), n(3, 3), o('+'), n(1, 4), o('÷'), n(3, 5)])).toBe('1')
     expect(v([n(2, 0), o('+'), n(3, 1), o('×'), n(4, 2)])).toBe('14')
     expect(v([o('('), n(2, 0), o('+'), n(3, 1), o(')'), o('×'), n(4, 2)])).toBe('20')
+    expect(v([n(12, 0), o('÷'), n(2, 1), o('×'), n(3, 2)])).toBe('18')
+    expect(v([n(12, 0), o('÷'), o('('), n(2, 1), o('×'), n(3, 2), o(')')])).toBe('2')
+    expect(v([n(24, 0), o('÷'), n(6, 1), o('÷'), n(2, 2)])).toBe('2')
+    expect(v([n(12, 0), o('−'), n(5, 1), o('+'), n(2, 2)])).toBe('9')
     expect(v([n(3, 0), o('÷'), n(4, 1)])).toBe('3/4')
     expect(v([n(3, 0), o('−'), n(7, 1)])).toBe('−4')
     expect(v([n(8, 0), o('÷'), o('('), n(2, 1), o('−'), n(2, 2), o(')')])).toBeNull()
@@ -502,39 +506,48 @@ describe('Make the Number (숫자 만들기)', () => {
         if (row.need === '×') expect(s.witness.some((t) => t.kind === 'op' && t.op === '×'), at).toBe(true)
         if (row.need === '÷') expect(s.witness.some((t) => t.kind === 'op' && t.op === '÷'), at).toBe(true)
         if (row.need === '()') expect(s.witness.some((t) => t.kind === 'op' && t.op === '('), at).toBe(true)
-        const indices = [...v.tiles.map((t) => t.index), ...v.ops.map((x) => x.index), v.undo.index, v.clear.index, v.submit.index]
+        const indices = [...v.tiles.map((t) => t.index), ...v.ops.map((x) => x.index), v.undo.index, v.clear.index, v.submit.index,
+          ...v.equation.flatMap((part) => part.control === 'sign' ? [part.index] : [])]
         expect(new Set(indices).size, `${at}: indices collide`).toBe(indices.length)
-        expect([v.reveal, v.locked, v.expression], at).toEqual([undefined, false, s.order === 'fixed' ? [{ kind: 'num', value: s.tiles[0], tile: 0 }] : []])
+        const equation = `${v.order === 'fixed' ? s.tiles.join(' □ ') : '…'} = ${s.target}`
+        expect(v.equation.map((part) => part.text).join(' '), at).toBe(equation)
+        expect(v.locked, at).toBe(false)
+        expect(v.reveal, at).toBeUndefined()
+        expect(v.lastValue, at).toBeUndefined()
         expect(makeNumber.timeLimitMs(s), at).toBe(makeNumberLimitMs(b, row.parMs))
       }
     }
   })
 
-  it('buttons follow the expression; a wrong submit costs a try and shows what it made; out of tries shows one way', () => {
-    let s = make(makeNumber, 1, 4) as MakeNumberState
-    const v0 = makeNumber.view(s) as MakeNumberView
+  it('keeps the target on the right and reports the calculated value only after submit', () => {
+    const s = makeNumber.create(5, createRng(8), DEFAULT_CONTEXT)
+    const initial = makeNumber.view(s) as MakeNumberView
     // Fixed order places each number automatically: the player chooses only signs.
-    expect(v0.tiles.every((x) => x.disabled)).toBe(true)
-    expect(v0.ops.every((x) => !x.disabled)).toBe(true)
-    expect(v0.submit.disabled).toBe(true)
-    const wrongOp = s.target === s.tiles.reduce((a, b) => a + b, 0) ? '−' : '+'
-    const plusIndex = v0.ops.find((x) => x.op === wrongOp)!.index
-    for (let i = 1; i < s.tiles.length; i++) s = makeNumber.tap(s, plusIndex)
-    const ready = makeNumber.view(s) as MakeNumberView
+    expect(initial.equation.map((part) => part.text).join(' ')).toBe('8 □ 4 = 2')
+    expect(initial.tiles.every((x) => x.disabled)).toBe(true)
+    expect(initial.ops.every((x) => !x.disabled)).toBe(true)
+    expect(initial.submit.disabled).toBe(true)
+    const wrong = makeNumber.tap(s, initial.ops.find((x) => x.op === '+')!.index)
+    const ready = makeNumber.view(wrong) as MakeNumberView
     expect(ready.submit.disabled).toBe(false)
-    expect(ready.preview).toBeDefined()
-    // Choose the other sign on the two-number starter, so this is a real wrong answer.
-    expect(Number(ready.preview)).not.toBe(s.target)
-    const once = makeNumber.tap(s, ready.submit.index)
-    const v2 = makeNumber.view(once) as MakeNumberView
-    expect(v2.tries).toEqual({ left: 2, total: 3 })
-    expect(v2.lastValue).toBe(ready.preview)
-    expect(v2.expression).toEqual(ready.expression)
+    expect(ready.equation.map((part) => part.text).join(' ')).toBe('8 + 4 = 2')
+    expect(ready.lastValue).toBeUndefined()
+    expect(ready).not.toHaveProperty('preview')
+    expect(ready.tries.left).toBe(3)
+    const once = makeNumber.tap(wrong, ready.submit.index)
+    expect(makeNumber.view(once)).toMatchObject({ equation: ready.equation, tries: { left: 2, total: 3 }, lastValue: '12' })
+
+    const revised = makeNumber.tap(once, initial.ops.find((x) => x.op === '÷')!.index)
+    const revision = makeNumber.view(revised) as MakeNumberView
+    expect(revision.equation.map((part) => part.text).join(' ')).toBe('8 ÷ 4 = 2')
+    expect(revision.tries.left).toBe(2)
+    expect(revision.lastValue).toBeUndefined()
+    expect(makeNumber.outcome(makeNumber.tap(revised, revision.submit.index))).toMatchObject({ correct: true, mistakes: 1 })
+
     let out = once
     while (!makeNumber.outcome(out)) out = makeNumber.tap(out, ready.submit.index)
     expect(makeNumber.outcome(out)).toEqual({ correct: false, accuracy: 0, mistakes: 3 })
-    const line = (makeNumber.view(out) as MakeNumberView).reveal!.lines[0]
-    expect(line.endsWith(` = ${s.target}`)).toBe(true)
+    expect((makeNumber.view(out) as MakeNumberView).reveal?.lines).toEqual(['8 ÷ 4 = 2'])
   })
 
   it('a new operator starts small again (2-3 tiles) with a card; a blocked one is swapped out of the band', () => {
@@ -549,7 +562,7 @@ describe('Make the Number (숫자 만들기)', () => {
 
   it('the top asks for a fraction on the way, four tiles, a tight clock and two tries', () => {
     const top = MAKE_NUMBER_LADDER[MAKE_NUMBER_MAX_LEVEL - 1]
-    expect([top.tiles, top.fraction, top.parMs, top.tries, top.preview]).toEqual([4, true, 50_000, 2, false])
+    expect([top.tiles, top.fraction, top.parMs, top.tries]).toEqual([4, true, 50_000, 2])
     let fractions = 0
     for (let seed = 1; seed <= 20; seed++) if (makeNumber.mechanics(make(makeNumber, 21, seed)).includes('makeNumber.fraction')) fractions++
     expect(fractions).toBeGreaterThanOrEqual(18)

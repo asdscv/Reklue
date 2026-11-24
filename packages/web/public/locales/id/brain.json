@@ -237,7 +237,8 @@
     "submit": "Periksa",
     "undo": "Urungkan",
     "clear": "Kosongkan",
-    "makeNumberSigns": "Pilih tanda untuk membuat {{target}}",
+    "makeNumberSigns": "Isi kotak kosong dengan tanda operasi",
+    "makeNumberSlots": "Ketuk kotak untuk mengisi atau mengganti tanda",
     "makeNumberTarget": "Gunakan semua angka untuk membuat {{target}}",
     "makeTarget": "Target {{target}}",
     "makeFixed": "Pertahankan urutan · pilih tanda",
@@ -245,6 +246,7 @@
     "makeTries_one": "Sisa {{count}} percobaan",
     "makeTries_other": "Sisa {{count}} percobaan",
     "makeExpression": "Ekspresi Anda",
+    "makeSignSlot": "Kotak tanda operasi {{position}}",
     "makeValue": "Hasilnya {{value}}. Coba ubah.",
     "mazeRunGo": "Gambar jalur menuju bendera",
     "mazeRunKeys_one": "Ambil {{count}} kunci sesuai urutan lalu menuju bendera",
@@ -632,7 +634,7 @@
       },
       "divide": {
         "title": "Pembagian ikut bermain",
-        "body": "Gunakan juga ÷. Hitung × dan ÷ lebih dahulu, dari kiri ke kanan."
+        "body": "Perkalian dan pembagian memiliki prioritas yang sama dan dihitung sebelum penjumlahan dan pengurangan. Jika muncul berurutan, hitung dari kiri ke kanan. Contohnya, 12 ÷ 2 × 3 = 6 × 3 = 18."
       },
       "anyOrder": {
         "title": "Pilih urutannya",

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { brainGame, createRng, DEFAULT_CONTEXT, GAME_THEMES, type BrainGameId, type MazeView } from '@reklue/shared/lib/brain-games'
+import { makeNumber } from '@reklue/shared/lib/brain-games/games/make-number'
 import { mazeDragCells } from '@reklue/shared/lib/brain-games/maze-drag'
 import { BrainBoard } from '../BrainBoard'
 
@@ -25,6 +26,57 @@ for (const [id, level] of [['setMatch', 1], ['codeBreak', 1], ['makeNumber', 1],
     expect(def.outcome(state)).toMatchObject({ correct: true })
   })
 }
+
+it('fills one blank in place and lets the player change signs before confirming', () => {
+  function Player() {
+    const [state, setState] = useState(() => makeNumber.create(5, createRng(8), DEFAULT_CONTEXT))
+    return <BrainBoard view={makeNumber.view(state)} onTap={(index) => setState((old) => makeNumber.tap(old, index))} width={358} theme={GAME_THEMES.makeNumber} />
+  }
+  render(<Player />)
+  const equation = screen.getByTestId('brain-make-number').querySelector('[aria-live="polite"]')
+  const confirm = screen.getByRole('button', { name: 'play.submit' })
+  const plus = screen.getByRole('button', { name: '+' })
+  const divide = screen.getByRole('button', { name: '÷' })
+
+  expect(equation).toHaveTextContent('8 □ 4 = 2')
+  expect(confirm).toBeDisabled()
+  fireEvent.click(plus)
+  expect(equation).toHaveTextContent('8 + 4 = 2')
+  expect(plus).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.queryByRole('status')).toBeNull()
+  expect(confirm).toBeEnabled()
+
+  fireEvent.click(divide)
+  expect(equation).toHaveTextContent('8 ÷ 4 = 2')
+  expect(divide).toHaveAttribute('aria-pressed', 'true')
+  expect(plus).toHaveAttribute('aria-pressed', 'false')
+  const undo = screen.getByRole('button', { name: 'play.undo' })
+  fireEvent.click(undo)
+  expect(equation).toHaveTextContent('8 + 4 = 2')
+  expect(confirm).toBeEnabled()
+  fireEvent.click(undo)
+  expect(equation).toHaveTextContent('8 □ 4 = 2')
+  expect(confirm).toBeDisabled()
+})
+
+it('selects an earlier on-screen slot and changes just that operator', () => {
+  function Player() {
+    const [state, setState] = useState(() => makeNumber.create(4, createRng(8), DEFAULT_CONTEXT))
+    return <BrainBoard view={makeNumber.view(state)} onTap={(index) => setState((old) => makeNumber.tap(old, index))} width={320} theme={GAME_THEMES.makeNumber} />
+  }
+  render(<Player />)
+  const [first, second] = within(screen.getByTestId('brain-make-equation')).getAllByRole('button')
+  expect(first).toHaveAttribute('aria-pressed', 'true')
+  fireEvent.click(screen.getByRole('button', { name: '+' }))
+  expect(second).toHaveAttribute('aria-pressed', 'true')
+  fireEvent.click(screen.getByRole('button', { name: '×' }))
+  fireEvent.click(first)
+  expect(first).toHaveAttribute('aria-pressed', 'true')
+  fireEvent.click(screen.getByRole('button', { name: '−' }))
+  expect(first).toHaveTextContent('−')
+  expect(second).toHaveTextContent('×')
+  expect(screen.queryByRole('status')).toBeNull()
+})
 
 describe('maze drag', () => {
   it('crosses every cell on fast straight and diagonal strokes; never skips to a non-neighbour', () => {

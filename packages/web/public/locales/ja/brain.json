@@ -237,7 +237,8 @@
     "submit": "決定",
     "undo": "戻す",
     "clear": "クリア",
-    "makeNumberSigns": "記号を選んで{{target}}を作ってください",
+    "makeNumberSigns": "空欄に入る記号を選んでください",
+    "makeNumberSlots": "記号を入れたい場所や変えたい場所をタップしてください",
     "makeNumberTarget": "全部の数字で{{target}}を作ってください",
     "makeTarget": "目標 {{target}}",
     "makeFixed": "この順番で記号を選びます",
@@ -245,6 +246,7 @@
     "makeTries_one": "残り{{count}}回",
     "makeTries_other": "残り{{count}}回",
     "makeExpression": "作成中の式",
+    "makeSignSlot": "演算記号の欄 {{position}}",
     "makeValue": "この式は{{value}}になります。直してみましょう。",
     "mazeRunGo": "道をなぞって旗まで進んでください",
     "mazeRunKeys_one": "{{count}}個の鍵を番号順に集めてから旗へ",
@@ -632,7 +634,7 @@
       },
       "divide": {
         "title": "割り算も使えます",
-        "body": "÷も使えます。×と÷を左から先に計算します。"
+        "body": "かけ算とわり算の優先順位は同じで、たし算やひき算より先に計算します。続けて出てきたら左から順に計算します。たとえば、12 ÷ 2 × 3 = 6 × 3 = 18 です。"
       },
       "anyOrder": {
         "title": "数字の順番も自由",

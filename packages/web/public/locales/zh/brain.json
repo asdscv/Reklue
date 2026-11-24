@@ -237,7 +237,8 @@
     "submit": "确认",
     "undo": "撤销",
     "clear": "清空",
-    "makeNumberSigns": "选择运算符凑出{{target}}",
+    "makeNumberSigns": "选择要填入空格的运算符",
+    "makeNumberSlots": "点击想填写或更改运算符的位置",
     "makeNumberTarget": "用全部数字凑出{{target}}",
     "makeTarget": "目标 {{target}}",
     "makeFixed": "数字顺序固定 · 选择运算符",
@@ -245,6 +246,7 @@
     "makeTries_one": "剩{{count}}次",
     "makeTries_other": "剩{{count}}次",
     "makeExpression": "当前算式",
+    "makeSignSlot": "运算符空格 {{position}}",
     "makeValue": "这个算式等于{{value}}，请修改。",
     "mazeRunGo": "沿通道画线走到旗帜",
     "mazeRunKeys_one": "按编号顺序收集{{count}}把钥匙，再到旗帜处",
@@ -632,7 +634,7 @@
       },
       "divide": {
         "title": "加入除法",
-        "body": "也可以用÷，乘除从左向右先算。"
+        "body": "乘法和除法的优先级相同，都比加法和减法先算。乘除运算连续出现时，从左到右计算。例如，12 ÷ 2 × 3 = 6 × 3 = 18。"
       },
       "anyOrder": {
         "title": "数字顺序不限",
