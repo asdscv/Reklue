@@ -37,6 +37,7 @@ export function GameIntro({
   overlay?: ReactNode
 }) {
   const { t } = useTranslation('brain')
+  const cardRecall = gameId === 'cardRecall'
   const theme = GAME_THEMES[gameId]
   const progress = useBrainStore((s) => s.progress)
   const meta = useBrainStore((s) => s.meta)
@@ -74,22 +75,22 @@ export function GameIntro({
 
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <Animated.View style={[styles.hero, rise]}>
-              <View style={[styles.icon, { boxShadow: `0 16px 48px ${theme.glow}` }]}>
+              {!cardRecall && <View style={[styles.icon, { boxShadow: `0 16px 48px ${theme.glow}` }]}>
                 <View style={[StyleSheet.absoluteFill, styles.iconClip]}>
                   <GradientFill from={theme.cardFrom} to={theme.cardTo} width={80} height={80} />
                 </View>
                 <Feather name={gameIcon(gameId)} size={40} color="#FFFFFF" />
-              </View>
+              </View>}
               {steps ? (
                 <Text style={[styles.slot, { color: theme.accent }]} maxFontSizeMultiplier={1.4}>
                   {t('training.slot', { index: steps.index + 1, total: steps.games.length })}
                 </Text>
               ) : null}
-              <Text style={styles.name} accessibilityRole="header" maxFontSizeMultiplier={1.4}>
+              <Text style={[styles.name, cardRecall && styles.cardName]} accessibilityRole="header" maxFontSizeMultiplier={1.4}>
                 {t(`games.${gameId}.name`)}
               </Text>
               {/* This game's tier, and how far toward the next — this game's record only. */}
-              <View style={styles.tier} accessible accessibilityLabel={`${t('tiers.label')} ${tierA11y(t, standing)}`} testID="brain-intro-tier">
+              {(!cardRecall || p.rounds > 0) && <View style={styles.tier} accessible accessibilityLabel={`${t('tiers.label')} ${tierA11y(t, standing)}`} testID="brain-intro-tier">
                 <View style={styles.tierChip}>
                   <TierMedal tier={standing.tier} size={22} />
                   <Text style={styles.tierChipText} numberOfLines={1} maxFontSizeMultiplier={1.3}>
@@ -102,7 +103,7 @@ export function GameIntro({
                     {standing.next === null ? t('tiers.max') : `${t('tiers.next')} · ${tierName(t, standing.next)}`}
                   </Text>
                 </View>
-              </View>
+              </View>}
               <Text style={styles.desc} maxFontSizeMultiplier={1.5}>
                 {t(`games.${gameId}.desc`)}
               </Text>
@@ -112,7 +113,7 @@ export function GameIntro({
               <Text style={styles.kicker} accessibilityRole="header" maxFontSizeMultiplier={1.4}>
                 {t('intro.howTo')}
               </Text>
-              {gameId === 'cardRecall' && <Text style={styles.note} maxFontSizeMultiplier={1.5}>{t('intro.cardRecallTip')}</Text>}
+              {cardRecall && <Text style={styles.cardTip} maxFontSizeMultiplier={1.5}>{t('intro.cardRecallTip')}</Text>}
               {width !== null ? (
                 <DemoPlayer gameId={gameId} width={width} />
               ) : null}
@@ -192,6 +193,8 @@ const styles = StyleSheet.create({
   iconClip: { borderRadius: 24, overflow: 'hidden' },
   slot: { fontSize: 16, fontWeight: '600', marginTop: 4 },
   name: { color: '#FFFFFF', fontSize: 32, fontWeight: '800', textAlign: 'center', letterSpacing: -0.5 },
+  cardName: { fontSize: 28 },
+  cardTip: { color: 'rgba(255,255,255,0.86)', fontSize: 15, lineHeight: 21 },
   desc: { color: 'rgba(255,255,255,0.82)', fontSize: 17, lineHeight: 25, textAlign: 'center', maxWidth: 440 },
   section: { gap: 8 },
   kicker: { color: 'rgba(255,255,255,0.72)', fontSize: 14, fontWeight: '700', letterSpacing: 1 },
